@@ -74,29 +74,9 @@ def _find_all_within(needle: np.ndarray, haystack: np.ndarray, match_threshold: 
     )
 
 
-class Image:
-    def __init__(self, image: Union[FileReferenceType, np.ndarray, PILImage.Image]):
-        self._original_image = image
-
-        self.__numpy_image = None
-
+class BaseImage:
     def _get_numpy_image(self) -> np.ndarray:
-        if self.__numpy_image is None:
-            image = self._original_image
-
-            if isinstance(image, (str, Path)):
-                image = PILImage.open(str(self._original_image))
-
-            if isinstance(image, PILImage.Image):
-                image = np.asarray(image)
-
-            if isinstance(image, np.ndarray):
-                if image.shape[2] == 4:
-                    image = image[:, :, :3]  # Remove alpha channel for now
-                self.__numpy_image = image
-            else:
-                raise TypeError(f'Unrecognized type for image: {self._original_image!r}')
-        return self.__numpy_image
+        raise NotImplementedError
 
     @property
     def width(self) -> int:
@@ -138,7 +118,7 @@ class Image:
 
         return ChildImage(self, region)
 
-    def find_image_all(self, needle: 'Image', confidence: float = 0.99, *, match_method=cv2.TM_SQDIFF_NORMED) -> Iterable[Tuple['ChildImage', float]]:
+    def find_image_all(self, needle: 'BaseImage', confidence: float = 0.99, *, match_method=cv2.TM_SQDIFF_NORMED) -> Iterable[Tuple['ChildImage', float]]:
         results = _find_all_within(
             needle._get_numpy_image(),
             self._get_numpy_image(),
@@ -155,14 +135,40 @@ class Image:
         return None
 
 
-class ChildImage(Image):
-    def __init__(self, parent_image: Image, region: Region):
-        super().__init__(None)
+class Image(BaseImage):
+    def __init__(self, image: Union[FileReferenceType, np.ndarray, PILImage.Image]):
+        self._original_image = image
+        self.__numpy_image = None
+
+    def _get_numpy_image(self) -> np.ndarray:
+        if self.__numpy_image is None:
+            image = self._original_image
+
+            if isinstance(image, (str, Path)):
+                image = PILImage.open(str(self._original_image))
+
+            if isinstance(image, PILImage.Image):
+                image = np.asarray(image)
+
+            if isinstance(image, np.ndarray):
+                if image.shape[2] == 4:
+                    # Remove alpha channel.  This is necessary for `find_image_all`, where color dimension needs to
+                    # match between the two images (and the datatype, e.g. uint8 vs float, but for now this isn't
+                    # checked/corrected).
+                    image = image[:, :, :3]
+                self.__numpy_image = image
+            else:
+                raise TypeError(f'Unrecognized type for image: {self._original_image!r}')
+        return self.__numpy_image
+
+
+class ChildImage(BaseImage):
+    def __init__(self, parent_image: BaseImage, region: Region):
         self._parent_image = parent_image
         self._region = region
 
     @property
-    def parent_image(self) -> Image:
+    def parent_image(self) -> BaseImage:
         return self._parent_image
 
     @property
@@ -179,10 +185,7 @@ class ChildImage(Image):
         return self._parent_image._get_numpy_image()[y_min:y_max, x_min:x_max, :]
 
 
-class Screen(Image):
-    def __init__(self):
-        super().__init__(None)
-
+class Screen(BaseImage):
     @classmethod
     def _get_pil_image(cls):
         return pyautogui.screenshot()
