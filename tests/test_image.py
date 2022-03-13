@@ -12,13 +12,13 @@ class TestImage:
     def test_height():
         any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
 
-        assert any_image.height == 913
+        assert any_image.height == 817
 
     @staticmethod
     def test_width():
         any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
 
-        assert any_image.width == 1920
+        assert any_image.width == 1313
 
     @staticmethod
     def test_getting_child_image():
@@ -72,17 +72,16 @@ class TestImage:
         found = list(any_image.find_image_all(needle))
 
         expected = {
-            Region(x=1260, y=240, width=31, height=17): 1.0,
-            Region(x=641, y=391, width=31, height=17): 0.9904767,
-            Region(x=918, y=391, width=31, height=17): 0.9926504,
-            Region(x=543, y=507, width=31, height=17): 0.99047655,
+            Region(x=1046, y=142, width=30, height=19),
+            Region(x=427, y=293, width=30, height=19),
+            Region(x=704, y=293, width=30, height=19),
+            Region(x=329, y=409, width=30, height=19),
         }
 
         assert len(found) == len(expected)
-        for child_image, score in found:
-            assert child_image.parent_image == any_image
-            assert child_image.region in expected
-            assert score == pytest.approx(expected[child_image.region])
+        assert all(score >= 0.99 for _, score in found)
+        actual = {image.region for image, _ in found}
+        assert expected == actual
 
     @staticmethod
     def test_finding_best_match_image():
@@ -92,7 +91,7 @@ class TestImage:
         found = any_image.find_image(needle)
 
         assert found.parent_image == any_image
-        assert found.region == Region(x=1260, y=240, width=31, height=17)
+        assert found.region == Region(x=1046, y=142, width=30, height=19)
 
 
 class TestChildImage:
