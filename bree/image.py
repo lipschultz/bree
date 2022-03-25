@@ -3,16 +3,20 @@ from pathlib import Path
 from typing import Union, Iterable, Tuple, Optional
 
 import cv2
-import numpy as np
 import matplotlib.pyplot as plt
-from PIL import Image as PILImage
+import numpy as np
 import pyautogui
+from PIL import Image as PILImage
 from matplotlib.patches import Rectangle
 
 FileReferenceType = Union[str, Path]
 
 
 class OutOfBoundsError(Exception):
+    pass
+
+
+class InvalidRegionError(Exception):
     pass
 
 
@@ -86,7 +90,7 @@ class BaseImage:
     def height(self) -> int:
         return self._get_numpy_image().shape[0]
 
-    def show(self, bounding_boxes: Iterable[Region] = ()) -> None:
+    def show(self, *, bounding_boxes: Iterable[Region] = ()) -> None:
         """
         Open a window to show the image using matplotlib.
         """
@@ -99,13 +103,13 @@ class BaseImage:
                 bounding_box.width,
                 bounding_box.height,
                 linewidth=2,
-                edgecolor='r',
+                edgecolor='b',
                 facecolor='none',
             ))
 
         plt.show()
 
-    def get_child_region(self, region: Region) -> 'ChildImage':
+    def get_child_region(self, region: Region) -> 'RegionInImage':
         if region.left < 0:
             raise OutOfBoundsError(f'region.x={region.left}.  Value must be at least zero.')
         if region.top < 0:
@@ -116,18 +120,23 @@ class BaseImage:
         if region.bottom >= self.height:
             raise OutOfBoundsError(f'region.left={region.left}.  Value exceeds size of image (height={self.height}).')
 
-        return ChildImage(self, region)
+        return RegionInImage(self, region)
 
-    def find_image_all(self, needle: 'BaseImage', confidence: float = 0.99, *, match_method=cv2.TM_SQDIFF_NORMED) -> Iterable[Tuple['ChildImage', float]]:
-        results = _find_all_within(
+    def find_image_all(self, needle: 'BaseImage', confidence: float = 0.99, *, match_method=cv2.TM_SQDIFF_NORMED) -> Iterable[Tuple['RegionInImage', float]]:
+        found = _find_all_within(
             needle._get_numpy_image(),
             self._get_numpy_image(),
             confidence,
             match_method=match_method
         )
-        return ((self.get_child_region(region), score) for region, score in results)
+        results = []
+        for region, score in found:
+            child = self.get_child_region(region)
+            results.append((child, score))
+        return results
+        # return ((self.get_child_region(region), score) for region, score in found)
 
-    def find_image(self, needle: 'Image', *args, **kwargs) -> Optional['ChildImage']:
+    def find_image(self, needle: 'BaseImage', *args, **kwargs) -> Optional['RegionInImage']:
         result = self.find_image_all(needle, *args, **kwargs)
         result = sorted(result, key=lambda res: res[1], reverse=True)
         if result:
@@ -137,6 +146,7 @@ class BaseImage:
 
 class Image(BaseImage):
     def __init__(self, image: Union[FileReferenceType, np.ndarray, PILImage.Image]):
+        super().__init__()
         self._original_image = image
         self.__numpy_image = None
 
@@ -161,11 +171,18 @@ class Image(BaseImage):
                 raise TypeError(f'Unrecognized type for image: {self._original_image!r}')
         return self.__numpy_image
 
+    def __repr__(self):
+        return f'Image(image={self._original_image!r})'
 
-class ChildImage(BaseImage):
+
+class RegionInImage(BaseImage):
     def __init__(self, parent_image: BaseImage, region: Region):
+        super().__init__()
         self._parent_image = parent_image
         self._region = region
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}(parent_image={self.parent_image!r}, region={self.region!r})'
 
     @property
     def parent_image(self) -> BaseImage:
@@ -174,6 +191,19 @@ class ChildImage(BaseImage):
     @property
     def region(self) -> Region:
         return self._region
+
+    @property
+    def absolute_region(self) -> Region:
+        if isinstance(self.parent_image, RegionInImage):
+            parent_absolute_region = self.parent_image.absolute_region
+            return Region(
+                parent_absolute_region.x + self.region.x,
+                parent_absolute_region.y + self.region.y,
+                self.region.width,
+                self.region.height,
+            )
+        else:
+            return self.region
 
     def _get_numpy_image(self) -> np.ndarray:
         x_min = self._region.left

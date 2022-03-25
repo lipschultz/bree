@@ -112,6 +112,22 @@ class TestChildImage:
         assert child_image.width == 100
 
     @staticmethod
+    def test_region():
+        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        region = Region(10, 30, 100, 400)
+        child_image = any_image.get_child_region(region)
+
+        assert child_image.region == region
+
+    @staticmethod
+    def test_getting_absolute_region_when_parent_is_image():
+        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        region = Region(10, 30, 100, 400)
+        child_image = any_image.get_child_region(region)
+
+        assert child_image.absolute_region == region
+
+    @staticmethod
     def test_getting_child_image():
         any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
         child_region = Region(10, 30, 100, 400)
@@ -124,3 +140,14 @@ class TestChildImage:
         actual_child_image = grandchild_image._get_numpy_image()
 
         assert (expected_child_image == actual_child_image).all()
+
+    @staticmethod
+    def test_getting_absolute_region_when_parent_is_child_image():
+        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        child_region = Region(10, 30, 100, 400)
+        child_image = any_image.get_child_region(child_region)
+
+        grandchild_region = Region(3, 5, 20, 100)
+        grandchild_image = child_image.get_child_region(grandchild_region)
+
+        assert grandchild_image.absolute_region == Region(13, 35, 20, 100)
