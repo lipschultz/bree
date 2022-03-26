@@ -79,9 +79,8 @@ class TestImage:
         }
 
         assert len(found) == len(expected)
-        assert all(score >= 0.99 for _, score in found)
-        actual = {image.region for image, _ in found}
-        assert expected == actual
+        assert all(f.match >= 0.99 for f in found)
+        assert expected == {image.region for image in found}
 
     @staticmethod
     def test_finding_best_match_image():

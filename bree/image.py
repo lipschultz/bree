@@ -138,7 +138,7 @@ class BaseImage:
             confidence: float = 0.99,
             *,
             match_method=cv2.TM_SQDIFF_NORMED
-    ) -> Iterable[Tuple['RegionInImage', float]]:
+    ) -> Iterable['MatchedRegionInImage']:
         found = _find_all_within(
             needle._get_numpy_image(),
             self._get_numpy_image(),
@@ -148,15 +148,15 @@ class BaseImage:
         results = []
         for region, score in found:
             child = self.get_child_region(region)
-            results.append((child, score))
+            results.append(MatchedRegionInImage.from_region_in_image(child, score))
         return results
         # return ((self.get_child_region(region), score) for region, score in found)
 
-    def find_image(self, needle: 'BaseImage', *args, **kwargs) -> Optional['RegionInImage']:
+    def find_image(self, needle: 'BaseImage', *args, **kwargs) -> Optional['MatchedRegionInImage']:
         result = self.find_image_all(needle, *args, **kwargs)
-        result = sorted(result, key=lambda res: res[1], reverse=True)
+        result = sorted(result, key=lambda res: res.match, reverse=True)
         if result:
-            return result[0][0]
+            return result[0]
         return None
 
 
@@ -197,7 +197,7 @@ class RegionInImage(BaseImage):
         self._parent_image = parent_image
         self._region = region
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'{self.__class__.__name__}(parent_image={self.parent_image!r}, region={self.region!r})'
 
     @property
@@ -296,6 +296,25 @@ class RegionInImage(BaseImage):
             region.width,
             (total_height - top_edge) if size is None else size,
         )
+
+
+class MatchedRegionInImage(RegionInImage):
+    def __init__(self, parent_image: BaseImage, region: Region, match: float):
+        super().__init__(parent_image, region)
+        self._match = match
+
+    @classmethod
+    def from_region_in_image(cls, region_in_image: RegionInImage, match: float) -> 'MatchedRegionInImage':
+        return cls(region_in_image.parent_image, region_in_image.region, match)
+
+    @property
+    def match(self) -> float:
+        return self._match
+
+    def __repr__(self) -> str:
+        attributes = ('parent_image', 'region', 'match')
+        attribute_str = ', '.join(f'{attr}={getattr(self, attr)!r}' for attr in attributes)
+        return f'{self.__class__.__name__}({attribute_str})'
 
 
 class Screen(BaseImage):
