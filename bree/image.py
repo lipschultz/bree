@@ -1,12 +1,13 @@
+from collections.abc import MutableMapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Union, Iterable, Tuple, Optional
+from typing import Union, Iterable, Tuple, Optional, Iterator, KeysView, ValuesView, overload
 
 import cv2
-import matplotlib.pyplot as plt
 import numpy as np
-import pyautogui
+import matplotlib.pyplot as plt
 from PIL import Image as PILImage
+import pyautogui
 from matplotlib.patches import Rectangle
 
 FileReferenceType = Union[str, Path]
@@ -89,6 +90,10 @@ class BaseImage:
     @property
     def height(self) -> int:
         return self._get_numpy_image().shape[0]
+
+    @property
+    def region(self) -> Region:
+        return Region(0, 0, self.width, self.height)
 
     def show(self, *, bounding_boxes: Iterable[Region] = ()) -> None:
         """
@@ -194,8 +199,8 @@ class RegionInImage(BaseImage):
 
     @property
     def absolute_region(self) -> Region:
-        if isinstance(self.parent_image, RegionInImage):
-            parent_absolute_region = self.parent_image.absolute_region
+        if isinstance(self._parent_image, RegionInImage):
+            parent_absolute_region = self._parent_image.absolute_region
             return Region(
                 parent_absolute_region.x + self.region.x,
                 parent_absolute_region.y + self.region.y,
@@ -204,6 +209,11 @@ class RegionInImage(BaseImage):
             )
         else:
             return self.region
+
+    def _get_root_image(self) -> BaseImage:
+        if isinstance(self._parent_image, RegionInImage):
+            return self._parent_image._get_root_image()
+        return self._parent_image
 
     def _get_numpy_image(self) -> np.ndarray:
         x_min = self._region.left
@@ -214,6 +224,21 @@ class RegionInImage(BaseImage):
 
         return self._parent_image._get_numpy_image()[y_min:y_max, x_min:x_max, :]
 
+    def region_left(self, size: Optional[int] = None, absolute=True) -> Region:
+        region = self.absolute_region if absolute else self.region
+
+        if size is None:
+            left_edge = 0
+        else:
+            left_edge = max(region.x - size, 0)
+
+        return Region(
+            left_edge,
+            region.y,
+            region.x - left_edge,
+            region.height,
+        )
+
 
 class Screen(BaseImage):
     @classmethod
@@ -223,5 +248,5 @@ class Screen(BaseImage):
     def _get_numpy_image(self):
         return np.asarray(self._get_pil_image())
 
-    def screenshot(self):
+    def screenshot(self) -> Image:
         return Image(self._get_numpy_image())

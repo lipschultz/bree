@@ -112,7 +112,7 @@ class TestChildImage:
         assert child_image.width == 100
 
     @staticmethod
-    def test_region():
+    def test_getting_region_for_child():
         any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
         region = Region(10, 30, 100, 400)
         child_image = any_image.get_child_region(region)
@@ -120,7 +120,7 @@ class TestChildImage:
         assert child_image.region == region
 
     @staticmethod
-    def test_getting_absolute_region_when_parent_is_image():
+    def test_getting_absolute_region_for_child():
         any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
         region = Region(10, 30, 100, 400)
         child_image = any_image.get_child_region(region)
@@ -128,7 +128,7 @@ class TestChildImage:
         assert child_image.absolute_region == region
 
     @staticmethod
-    def test_getting_child_image():
+    def test_getting_grandchild_image():
         any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
         child_region = Region(10, 30, 100, 400)
         child_image = any_image.get_child_region(child_region)
@@ -142,7 +142,18 @@ class TestChildImage:
         assert (expected_child_image == actual_child_image).all()
 
     @staticmethod
-    def test_getting_absolute_region_when_parent_is_child_image():
+    def test_getting_region_for_grandchild():
+        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        child_region = Region(10, 30, 100, 400)
+        child_image = any_image.get_child_region(child_region)
+
+        grandchild_region = Region(3, 5, 20, 100)
+        grandchild_image = child_image.get_child_region(grandchild_region)
+
+        assert grandchild_image.region == grandchild_region
+
+    @staticmethod
+    def test_getting_absolute_region_for_grandchild():
         any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
         child_region = Region(10, 30, 100, 400)
         child_image = any_image.get_child_region(child_region)
@@ -151,3 +162,42 @@ class TestChildImage:
         grandchild_image = child_image.get_child_region(grandchild_region)
 
         assert grandchild_image.absolute_region == Region(13, 35, 20, 100)
+
+    @staticmethod
+    @pytest.mark.parametrize(
+        "size,absolute,expected_region",
+        [
+            (None, False, Region(0, 30, 10, 400)),
+            (None, True, Region(0, 30, 10, 400)),
+            (3, False, Region(7, 30, 3, 400)),
+            (3, True, Region(7, 30, 3, 400)),
+        ]
+    )
+    def test_getting_region_left(size, absolute, expected_region):
+        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        child_region = Region(10, 30, 100, 400)
+        child_image = any_image.get_child_region(child_region)
+
+        actual_region = child_image.region_left(size, absolute)
+
+        assert actual_region == expected_region
+
+    @pytest.mark.parametrize(
+        "size,absolute,expected_region",
+        [
+            (None, False, Region(0, 5, 3, 100)),
+            (None, True, Region(0, 35, 13, 100)),
+            (2, False, Region(1, 5, 2, 100)),
+            (4, True, Region(9, 35, 4, 100)),
+        ]
+    )
+    def test_getting_region_left_for_grandchild(self, size, absolute, expected_region):
+        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        child_region = Region(10, 30, 100, 400)
+        child_image = any_image.get_child_region(child_region)
+        grandchild_region = Region(3, 5, 20, 100)
+        grandchild_image = child_image.get_child_region(grandchild_region)
+
+        actual_region = grandchild_image.region_left(size, absolute)
+
+        assert actual_region == expected_region
