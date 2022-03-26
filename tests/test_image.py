@@ -279,3 +279,42 @@ class TestChildImage:
         actual_region = grandchild_image.region_right(size, absolute)
 
         assert actual_region == expected_region
+
+    @staticmethod
+    @pytest.mark.parametrize(
+        "size,absolute,expected_region",
+        [
+            (None, False, Region(10, 431, 100, 386)),
+            (None, True, Region(10, 431, 100, 386)),
+            (3, False, Region(10, 431, 100, 3)),
+            (3, True, Region(10, 431, 100, 3)),
+        ]
+    )
+    def test_getting_region_below(size, absolute, expected_region):
+        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        child_region = Region(10, 30, 100, 400)
+        child_image = any_image.get_child_region(child_region)
+
+        actual_region = child_image.region_below(size, absolute)
+
+        assert actual_region == expected_region
+
+    @pytest.mark.parametrize(
+        "size,absolute,expected_region",
+        [
+            (None, False, Region(3, 106, 20, 294)),
+            (None, True, Region(13, 136, 20, 681)),
+            (2, False, Region(3, 106, 20, 2)),
+            (4, True, Region(13, 136, 20, 4)),
+        ]
+    )
+    def test_getting_region_below_for_grandchild(self, size, absolute, expected_region):
+        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        child_region = Region(10, 30, 100, 400)
+        child_image = any_image.get_child_region(child_region)
+        grandchild_region = Region(3, 5, 20, 100)
+        grandchild_image = child_image.get_child_region(grandchild_region)
+
+        actual_region = grandchild_image.region_below(size, absolute)
+
+        assert actual_region == expected_region

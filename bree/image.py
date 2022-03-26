@@ -1,13 +1,12 @@
-from collections.abc import MutableMapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Union, Iterable, Tuple, Optional, Iterator, KeysView, ValuesView, overload
+from typing import Union, Iterable, Tuple, Optional
 
 import cv2
-import numpy as np
 import matplotlib.pyplot as plt
-from PIL import Image as PILImage
+import numpy as np
 import pyautogui
+from PIL import Image as PILImage
 from matplotlib.patches import Rectangle
 
 FileReferenceType = Union[str, Path]
@@ -61,8 +60,14 @@ class Region:
         return (self.right + self.left) // 2, (self.bottom + self.top) // 2
 
 
-def _find_all_within(needle: np.ndarray, haystack: np.ndarray, match_threshold: float = 1.0, *, match_method=cv2.TM_SQDIFF_NORMED) -> Iterable[Tuple[Region, float]]:
-    # from: https://stackoverflow.com/questions/7853628/how-do-i-find-an-image-contained-within-an-image/15147009#15147009
+def _find_all_within(
+        needle: np.ndarray,
+        haystack: np.ndarray,
+        match_threshold: float = 1.0,
+        *,
+        match_method=cv2.TM_SQDIFF_NORMED
+) -> Iterable[Tuple[Region, float]]:
+    # https://stackoverflow.com/questions/7853628/how-do-i-find-an-image-contained-within-an-image/15147009#15147009
     height, width = needle.shape[:2]
 
     result = cv2.matchTemplate(needle, haystack, match_method)
@@ -127,7 +132,13 @@ class BaseImage:
 
         return RegionInImage(self, region)
 
-    def find_image_all(self, needle: 'BaseImage', confidence: float = 0.99, *, match_method=cv2.TM_SQDIFF_NORMED) -> Iterable[Tuple['RegionInImage', float]]:
+    def find_image_all(
+            self,
+            needle: 'BaseImage',
+            confidence: float = 0.99,
+            *,
+            match_method=cv2.TM_SQDIFF_NORMED
+    ) -> Iterable[Tuple['RegionInImage', float]]:
         found = _find_all_within(
             needle._get_numpy_image(),
             self._get_numpy_image(),
@@ -268,6 +279,22 @@ class RegionInImage(BaseImage):
             region.y,
             (total_width - left_edge) if size is None else size,
             region.height,
+        )
+
+    def region_below(self, size: Optional[int] = None, absolute=True) -> Region:
+        region = self.absolute_region if absolute else self.region
+
+        top_edge = region.bottom + 1
+        if absolute:
+            total_height = self._get_root_image().height
+        else:
+            total_height = self._parent_image.height
+
+        return Region(
+            region.x,
+            top_edge,
+            region.width,
+            (total_height - top_edge) if size is None else size,
         )
 
 
