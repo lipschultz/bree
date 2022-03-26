@@ -254,6 +254,22 @@ class RegionInImage(BaseImage):
             region.y - top_edge,
         )
 
+    def region_right(self, size: Optional[int] = None, absolute=True) -> Region:
+        region = self.absolute_region if absolute else self.region
+
+        left_edge = region.right + 1
+        if absolute:
+            total_width = self._get_root_image().width
+        else:
+            total_width = self._parent_image.width
+
+        return Region(
+            left_edge,
+            region.y,
+            (total_width - left_edge) if size is None else size,
+            region.height,
+        )
+
 
 class Screen(BaseImage):
     @classmethod
