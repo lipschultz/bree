@@ -239,6 +239,21 @@ class RegionInImage(BaseImage):
             region.height,
         )
 
+    def region_above(self, size: Optional[int] = None, absolute=True) -> Region:
+        region = self.absolute_region if absolute else self.region
+
+        if size is None:
+            top_edge = 0
+        else:
+            top_edge = max(region.y - size, 0)
+
+        return Region(
+            region.x,
+            top_edge,
+            region.width,
+            region.y - top_edge,
+        )
+
 
 class Screen(BaseImage):
     @classmethod
