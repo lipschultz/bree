@@ -16,10 +16,6 @@ class OutOfBoundsError(Exception):
     pass
 
 
-class InvalidRegionError(Exception):
-    pass
-
-
 @dataclass(frozen=True)
 class Region:
     x: int
@@ -154,7 +150,7 @@ class BaseImage:
 
     def find_image(self, needle: 'BaseImage', *args, **kwargs) -> Optional['MatchedRegionInImage']:
         result = self.find_image_all(needle, *args, **kwargs)
-        result = sorted(result, key=lambda res: res.match, reverse=True)
+        result = sorted(result, key=lambda res: res.confidence, reverse=True)
         if result:
             return result[0]
         return None
@@ -299,20 +295,20 @@ class RegionInImage(BaseImage):
 
 
 class MatchedRegionInImage(RegionInImage):
-    def __init__(self, parent_image: BaseImage, region: Region, match: float):
+    def __init__(self, parent_image: BaseImage, region: Region, confidence: float):
         super().__init__(parent_image, region)
-        self._match = match
+        self._confidence = confidence
 
     @classmethod
-    def from_region_in_image(cls, region_in_image: RegionInImage, match: float) -> 'MatchedRegionInImage':
-        return cls(region_in_image.parent_image, region_in_image.region, match)
+    def from_region_in_image(cls, region_in_image: RegionInImage, confidence: float) -> 'MatchedRegionInImage':
+        return cls(region_in_image.parent_image, region_in_image.region, confidence)
 
     @property
-    def match(self) -> float:
-        return self._match
+    def confidence(self) -> float:
+        return self._confidence
 
     def __repr__(self) -> str:
-        attributes = ('parent_image', 'region', 'match')
+        attributes = ('parent_image', 'region', 'confidence')
         attribute_str = ', '.join(f'{attr}={getattr(self, attr)!r}' for attr in attributes)
         return f'{self.__class__.__name__}({attribute_str})'
 

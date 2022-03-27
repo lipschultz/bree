@@ -79,7 +79,7 @@ class TestImage:
         }
 
         assert len(found) == len(expected)
-        assert all(f.match >= 0.99 for f in found)
+        assert all(f.confidence >= 0.99 for f in found)
         assert expected == {image.region for image in found}
 
     @staticmethod
