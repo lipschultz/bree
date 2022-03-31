@@ -141,12 +141,11 @@ class BaseImage:
             confidence,
             match_method=match_method
         )
-        results = []
-        for region, score in found:
-            child = self.get_child_region(region)
-            results.append(MatchedRegionInImage.from_region_in_image(child, score))
-        return results
-        # return ((self.get_child_region(region), score) for region, score in found)
+
+        return (
+            MatchedRegionInImage.from_region_in_image(self.get_child_region(region), score)
+            for region, score in found
+        )
 
     def find_image(self, needle: 'BaseImage', *args, **kwargs) -> Optional['MatchedRegionInImage']:
         result = self.find_image_all(needle, *args, **kwargs)
