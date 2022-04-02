@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Union, Iterable, Tuple, Optional
+from typing import Union, Iterable, Tuple, Optional, List
 
 import cv2
 import matplotlib.pyplot as plt
@@ -84,6 +84,9 @@ class BaseImage:
     def _get_numpy_image(self) -> np.ndarray:
         raise NotImplementedError
 
+    def __eq__(self, other: 'BaseImage') -> bool:
+        return np.array_equal(self._get_numpy_image(), other._get_numpy_image())
+
     @property
     def width(self) -> int:
         return self._get_numpy_image().shape[1]
@@ -154,6 +157,38 @@ class BaseImage:
             return result[0]
         return None
 
+    def wait_until_image_appears(
+            self,
+            needle: 'BaseImage',
+            confidence: float = 0.99,
+            timeout: float = 5,
+            *,
+            match_method=cv2.TM_SQDIFF_NORMED,
+            scans_per_second: float = 3,
+    ) -> List['MatchedRegionInImage']:
+        scan_count = 0 if timeout * scans_per_second > 0 else -1  # We want the loop to occur at least once
+        result = []
+        while scan_count < timeout * scans_per_second:
+            result = list(self.find_image_all(needle, confidence, match_method=match_method))
+            scan_count += 1
+            if len(result) > 0:
+                break
+            else:
+                pyautogui.sleep(1/scans_per_second)
+
+        return result
+
+    def contains(self, needle: 'BaseImage', *args, **kwargs) -> bool:
+        if isinstance(needle, BaseImage):
+            return self.contains_image(needle, *args, **kwargs)
+        raise TypeError(f'Unsupported needle type: {type(needle)}')
+
+    def contains_image(self, needle: 'BaseImage', *args, **kwargs) -> bool:
+        return len(self.wait_until_image_appears(needle, *args, **kwargs)) > 0
+
+    def __contains__(self, needle: 'BaseImage') -> bool:
+        return self.contains(needle, timeout=0)
+
 
 class Image(BaseImage):
     def __init__(self, image: Union[FileReferenceType, np.ndarray, PILImage.Image]):
@@ -194,6 +229,13 @@ class RegionInImage(BaseImage):
 
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}(parent_image={self.parent_image!r}, region={self.region!r})'
+
+    def __eq__(self, other: 'RegionInImage') -> bool:
+        return (
+            isinstance(other, RegionInImage) and
+            self._parent_image == other._parent_image and
+            self._region == other._region
+        )
 
     @property
     def parent_image(self) -> BaseImage:
@@ -310,6 +352,13 @@ class MatchedRegionInImage(RegionInImage):
         attributes = ('parent_image', 'region', 'confidence')
         attribute_str = ', '.join(f'{attr}={getattr(self, attr)!r}' for attr in attributes)
         return f'{self.__class__.__name__}({attribute_str})'
+
+    def __eq__(self, other: 'MatchedRegionInImage') -> bool:
+        return (
+            isinstance(other, MatchedRegionInImage) and
+            super().__eq__(other) and
+            self._confidence == other._confidence
+        )
 
 
 class Screen(BaseImage):
