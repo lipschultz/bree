@@ -182,6 +182,126 @@ class TestImage:
             sleep_patch.assert_not_called()
 
     @staticmethod
+    def test_wait_until_image_vanishes_returns_true_when_needle_not_found_in_image():
+        any_image = Image(RESOURCES_DIR / 'the.png')
+        needle = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image.find_image_all = MagicMock(return_value=[])
+
+        with mock.patch('bree.image.pyautogui.sleep', return_value=None, new_callable=MagicMock) as sleep_patch:
+            vanished = any_image.wait_until_image_vanishes(
+                needle,
+                0.8,
+                10,
+                match_method='ANY-METHOD',
+                scans_per_second=20
+            )
+
+            assert vanished is True
+            any_image.find_image_all.assert_has_calls([
+                call(needle, 0.8, match_method='ANY-METHOD')
+            ])
+            assert any_image.find_image_all.call_count == 1
+            sleep_patch.assert_not_called()
+
+    @staticmethod
+    def test_wait_until_image_vanishes_returns_false_when_needle_found_in_image():
+        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        needle = Image(RESOURCES_DIR / 'the.png')
+        any_image.find_image_all = MagicMock(return_value=[MatchedRegionInImage(any_image, Region(0, 0, 1, 1), 1.0)])
+
+        with mock.patch('bree.image.pyautogui.sleep', return_value=None, new_callable=MagicMock) as sleep_patch:
+            vanished = any_image.wait_until_image_vanishes(
+                needle,
+                0.8,
+                10,
+                match_method='ANY-METHOD',
+                scans_per_second=20
+            )
+
+            assert vanished is False
+            any_image.find_image_all.assert_has_calls([
+                call(needle, 0.8, match_method='ANY-METHOD')
+            ] * 200)
+            assert any_image.find_image_all.call_count == 200
+            sleep_patch.assert_has_calls([
+                call(1/20)
+            ] * 200)
+            assert sleep_patch.call_count == 200
+
+    @staticmethod
+    def test_wait_until_image_vanishes_returns_true_when_needle_eventually_leaves_image():
+        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        needle = Image(RESOURCES_DIR / 'the.png')
+        any_image.find_image_all = MagicMock(side_effect=[
+            [MatchedRegionInImage(any_image, Region(0, 0, 1, 1), 1.0)],
+            [MatchedRegionInImage(any_image, Region(0, 0, 1, 1), 1.0)],
+            [],
+        ])
+
+        with mock.patch('bree.image.pyautogui.sleep', return_value=None, new_callable=MagicMock) as sleep_patch:
+            vanished = any_image.wait_until_image_vanishes(
+                needle,
+                0.8,
+                10,
+                match_method='ANY-METHOD',
+                scans_per_second=20
+            )
+
+            assert vanished is True
+            any_image.find_image_all.assert_has_calls([
+                call(needle, 0.8, match_method='ANY-METHOD')
+            ] * 3)
+            assert any_image.find_image_all.call_count == 3
+            sleep_patch.assert_has_calls([
+                call(1/20)
+            ] * 2)
+            assert sleep_patch.call_count == 2
+
+    @staticmethod
+    def test_wait_until_image_vanishes_scans_once_when_timeout_is_zero():
+        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        needle = Image(RESOURCES_DIR / 'the.png')
+        any_image.find_image_all = MagicMock(return_value=[])
+
+        with mock.patch('bree.image.pyautogui.sleep', return_value=None, new_callable=MagicMock) as sleep_patch:
+            vanished = any_image.wait_until_image_vanishes(
+                needle,
+                0.8,
+                10,
+                match_method='ANY-METHOD',
+                scans_per_second=20
+            )
+
+            assert vanished is True
+            any_image.find_image_all.assert_has_calls([
+                call(needle, 0.8, match_method='ANY-METHOD')
+            ])
+            assert any_image.find_image_all.call_count == 1
+            sleep_patch.assert_not_called()
+
+    @staticmethod
+    def test_wait_until_image_vanishes_scans_once_when_scans_per_second_is_zero():
+        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        needle = Image(RESOURCES_DIR / 'the.png')
+        any_image.find_image_all = MagicMock(return_value=[])
+
+        with mock.patch('bree.image.pyautogui.sleep', return_value=None, new_callable=MagicMock) as sleep_patch:
+            vanished = any_image.wait_until_image_vanishes(
+                needle,
+                0.8,
+                10,
+                match_method='ANY-METHOD',
+                scans_per_second=20
+            )
+
+            assert vanished is True
+            any_image.find_image_all.assert_has_calls([
+                call(needle, 0.8, match_method='ANY-METHOD')
+            ])
+            assert any_image.find_image_all.call_count == 1
+            sleep_patch.assert_not_called()
+
+    @staticmethod
     def test_contains_image_returns_false_when_needle_not_found_in_image():
         any_image = Image(RESOURCES_DIR / 'the.png')
         needle = Image(RESOURCES_DIR / 'wiki-python-text.png')

@@ -178,6 +178,26 @@ class BaseImage:
 
         return result
 
+    def wait_until_image_vanishes(
+            self,
+            needle: 'BaseImage',
+            confidence: float = 0.99,
+            timeout: float = 5,
+            *,
+            match_method=cv2.TM_SQDIFF_NORMED,
+            scans_per_second: float = 3,
+    ) -> bool:
+        scan_count = 0 if timeout * scans_per_second > 0 else -1  # We want the loop to occur at least once
+        while scan_count < timeout * scans_per_second:
+            result = list(self.find_image_all(needle, confidence, match_method=match_method))
+            scan_count += 1
+            if len(result) == 0:
+                return True
+            else:
+                pyautogui.sleep(1/scans_per_second)
+
+        return False
+
     def contains(self, needle: 'BaseImage', *args, **kwargs) -> bool:
         if isinstance(needle, BaseImage):
             return self.contains_image(needle, *args, **kwargs)
