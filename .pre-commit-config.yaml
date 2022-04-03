@@ -4,7 +4,6 @@ repos:
     hooks:
     -   id: check-yaml
     -   id: end-of-file-fixer
-    -   id: trailing-whitespace
 -   repo: https://github.com/PyCQA/flake8
     rev: 4.0.1
     hooks:
