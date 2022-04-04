@@ -4,7 +4,8 @@ from unittest.mock import MagicMock, call
 
 import pytest
 
-from bree.image import Image, Region, OutOfBoundsError, MatchedRegionInImage
+from bree.image import Image, OutOfBoundsError, MatchedRegionInImage
+from bree.location import Region
 
 RESOURCES_DIR = Path(__file__).parent / 'resources'
 

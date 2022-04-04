@@ -5,7 +5,7 @@ from typing import Optional, List, Tuple
 import numpy as np
 import pytesseract
 
-from bree.image import Region
+from bree.location import Region
 
 OCRMatch = namedtuple('OCRMatch', ['index_start', 'index_end', 'region', 'confidence'])
 

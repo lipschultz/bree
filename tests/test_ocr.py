@@ -1,7 +1,8 @@
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
-from bree.image import Image, Region
+from bree.image import Image
+from bree.location import Region
 from bree.ocr import OCRMatcher, OCRMatch
 
 RESOURCES_DIR = Path(__file__).parent / 'resources'
