@@ -1,5 +1,5 @@
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 from bree.image import Image, Region
 from bree.ocr import OCRMatcher, OCRMatch
@@ -419,7 +419,7 @@ class TestOCRMatcher:
         assert matcher._ocr_segments == WIKI_PYTHON_TEXT_POSITIONS
 
 
-class TestFind:
+class TestFindingBoundingBoxes:
     @staticmethod
     def test_finding_complete_single_word():
         with patch('bree.ocr.OCRMatcher._process_file'):
@@ -428,17 +428,40 @@ class TestFind:
             matcher._parsed_text = WIKI_PYTHON_TEXT_TEXT
             matcher._ocr_segments = WIKI_PYTHON_TEXT_POSITIONS
 
-            assert matcher.find('the') == OCRMatch(50, 53, Region(155, 84, 24, 12), 94.887207)
+            expected = (50, 53, [OCRMatch(50, 53, Region(155, 84, 24, 12), 94.887207)])
+            assert matcher.find_bounding_boxes('the') == expected
 
     @staticmethod
-    def test_finding_partial_single_word_finds_entire_words_bounding_box():
+    def test_finding_complete_single_word_using_regex():
         with patch('bree.ocr.OCRMatcher._process_file'):
             any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
             matcher = OCRMatcher(any_image._get_numpy_image())
             matcher._parsed_text = WIKI_PYTHON_TEXT_TEXT
             matcher._ocr_segments = WIKI_PYTHON_TEXT_POSITIONS
 
-            assert matcher.find('he') == OCRMatch(50, 53, Region(155, 84, 24, 12), 94.887207)
+            expected = (50, 53, [OCRMatch(50, 53, Region(155, 84, 24, 12), 94.887207)])
+            assert matcher.find_bounding_boxes('the', regex=True) == expected
+
+    @staticmethod
+    def test_finding_latter_part_of_single_word_finds_entire_words_bounding_box():
+        with patch('bree.ocr.OCRMatcher._process_file'):
+            any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+            matcher = OCRMatcher(any_image._get_numpy_image())
+            matcher._parsed_text = WIKI_PYTHON_TEXT_TEXT
+            matcher._ocr_segments = WIKI_PYTHON_TEXT_POSITIONS
+
+            assert matcher.find_bounding_boxes('he') == (51, 53, [OCRMatch(50, 53, Region(155, 84, 24, 12), 94.887207)])
+
+    @staticmethod
+    def test_finding_beginning_part_of_single_word_finds_entire_words_bounding_box():
+        with patch('bree.ocr.OCRMatcher._process_file'):
+            any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+            matcher = OCRMatcher(any_image._get_numpy_image())
+            matcher._parsed_text = WIKI_PYTHON_TEXT_TEXT
+            matcher._ocr_segments = WIKI_PYTHON_TEXT_POSITIONS
+
+            expected = (72, 76, [OCRMatch(72, 83, Region(50, 106, 79, 12), 96.697075)])
+            assert matcher.find_bounding_boxes('(Red') == expected
 
     @staticmethod
     def test_finding_complete_single_word_with_preceding_space():
@@ -448,7 +471,10 @@ class TestFind:
             matcher._parsed_text = WIKI_PYTHON_TEXT_TEXT
             matcher._ocr_segments = WIKI_PYTHON_TEXT_POSITIONS
 
-            assert matcher.find(' the') == OCRMatch(49, 53, Region(148, 84, 31, 15), 94.887207)
+            assert matcher.find_bounding_boxes(' the') == (49, 53, [
+                OCRMatch(49, 50, Region(148, 84, 7, 15), None),
+                OCRMatch(50, 53, Region(155, 84, 24, 12), 94.887207),
+            ])
 
     @staticmethod
     def test_finding_complete_single_word_with_space_before_and_after():
@@ -458,7 +484,11 @@ class TestFind:
             matcher._parsed_text = WIKI_PYTHON_TEXT_TEXT
             matcher._ocr_segments = WIKI_PYTHON_TEXT_POSITIONS
 
-            assert matcher.find(' the ') == OCRMatch(49, 54, Region(148, 84, 37, 15), 94.887207)
+            assert matcher.find_bounding_boxes(' the ') == (49, 54, [
+                OCRMatch(49, 50, Region(148, 84, 7, 15), None),
+                OCRMatch(50, 53, Region(155, 84, 24, 12), 94.887207),
+                OCRMatch(53, 54, Region(179, 84, 6, 12), None),
+            ])
 
     @staticmethod
     def test_finding_two_words():
@@ -468,7 +498,11 @@ class TestFind:
             matcher._parsed_text = WIKI_PYTHON_TEXT_TEXT
             matcher._ocr_segments = WIKI_PYTHON_TEXT_POSITIONS
 
-            assert matcher.find('Wikipedia, the') == OCRMatch(39, 53, Region(69, 84, 110, 15), 94.515457)
+            assert matcher.find_bounding_boxes('Wikipedia, the') == (39, 53, [
+                OCRMatch(39, 49, Region(69, 84, 79, 15), 94.515457),
+                OCRMatch(49, 50, Region(148, 84, 7, 15), None),
+                OCRMatch(50, 53, Region(155, 84, 24, 12), 94.887207),
+            ])
 
     @staticmethod
     def test_finding_complete_single_word_on_second_line():
@@ -478,7 +512,9 @@ class TestFind:
             matcher._parsed_text = WIKI_PYTHON_TEXT_TEXT
             matcher._ocr_segments = WIKI_PYTHON_TEXT_POSITIONS
 
-            assert matcher.find('(Redirected') == OCRMatch(72, 83, Region(50, 106, 79, 12), 96.697075)
+            assert matcher.find_bounding_boxes('(Redirected') == (72, 83, [
+                OCRMatch(72, 83, Region(50, 106, 79, 12), 96.697075)
+            ])
 
     @staticmethod
     def test_finding_two_words_on_separate_lines():
@@ -487,5 +523,101 @@ class TestFind:
             matcher = OCRMatcher(any_image._get_numpy_image())
             matcher._parsed_text = WIKI_PYTHON_TEXT_TEXT
             matcher._ocr_segments = WIKI_PYTHON_TEXT_POSITIONS
+
+            assert matcher.find_bounding_boxes('encyclopedia\n(Redirected') == (59, 83, [
+                OCRMatch(59, 71, Region(220, 84, 101, 15), 96.515205),
+                OCRMatch(71, 72, Region(321, 84, -271, 15), None),
+                OCRMatch(72, 83, Region(50, 106, 79, 12), 96.697075)
+            ])
+
+    @staticmethod
+    def test_finding_needle_with_regex_pattern():
+        with patch('bree.ocr.OCRMatcher._process_file'):
+            any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+            matcher = OCRMatcher(any_image._get_numpy_image())
+            matcher._parsed_text = WIKI_PYTHON_TEXT_TEXT
+            matcher._ocr_segments = WIKI_PYTHON_TEXT_POSITIONS
+
+            assert matcher.find_bounding_boxes(r'encyclopedia\s+\(Redirected', regex=True) == (59, 83, [
+                OCRMatch(59, 71, Region(220, 84, 101, 15), 96.515205),
+                OCRMatch(71, 72, Region(321, 84, -271, 15), None),
+                OCRMatch(72, 83, Region(50, 106, 79, 12), 96.697075)
+            ])
+
+    @staticmethod
+    def test_failing_to_find_needle():
+        with patch('bree.ocr.OCRMatcher._process_file'):
+            any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+            matcher = OCRMatcher(any_image._get_numpy_image())
+            matcher._parsed_text = WIKI_PYTHON_TEXT_TEXT
+            matcher._ocr_segments = WIKI_PYTHON_TEXT_POSITIONS
+
+            assert matcher.find_bounding_boxes('NOT IN TEXT') == (-1, -1, [])
+
+    @staticmethod
+    def test_failing_to_find_needle_using_regex():
+        with patch('bree.ocr.OCRMatcher._process_file'):
+            any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+            matcher = OCRMatcher(any_image._get_numpy_image())
+            matcher._parsed_text = WIKI_PYTHON_TEXT_TEXT
+            matcher._ocr_segments = WIKI_PYTHON_TEXT_POSITIONS
+
+            assert matcher.find_bounding_boxes('NOT IN TEXT', regex=True) == (-1, -1, [])
+
+
+class TestFind:
+    @staticmethod
+    def test_failing_to_find_needle():
+        with patch('bree.ocr.OCRMatcher._process_file'):
+            any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+            matcher = OCRMatcher(any_image._get_numpy_image())
+            matcher._parsed_text = WIKI_PYTHON_TEXT_TEXT
+            matcher._ocr_segments = WIKI_PYTHON_TEXT_POSITIONS
+            matcher.find_bounding_boxes = MagicMock(return_value=(-1, -1, []))
+
+            assert matcher.find('NOT IN TEXT') is None
+            matcher.find_bounding_boxes.assert_called_once_with('NOT IN TEXT')
+
+    @staticmethod
+    def test_finding_one_bounding_box_where_indices_match_text_result_indices():
+        with patch('bree.ocr.OCRMatcher._process_file'):
+            any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+            matcher = OCRMatcher(any_image._get_numpy_image())
+            matcher.find_bounding_boxes = MagicMock(return_value=(1, 8, [OCRMatch(1, 8, Region(155, 84, 24, 12), 90)]))
+
+            assert matcher.find('IN TEXT') == OCRMatch(1, 8, Region(155, 84, 24, 12), 90)
+
+    @staticmethod
+    def test_finding_one_bounding_box_where_indices_dont_match_text_result_indices():
+        with patch('bree.ocr.OCRMatcher._process_file'):
+            any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+            matcher = OCRMatcher(any_image._get_numpy_image())
+            matcher.find_bounding_boxes = MagicMock(return_value=(3, 7, [OCRMatch(1, 8, Region(155, 84, 24, 12), 90)]))
+
+            assert matcher.find('N TEX') == OCRMatch(3, 7, Region(155, 84, 24, 12), 90)
+
+    @staticmethod
+    def test_finding_bounding_boxes_on_same_line():
+        with patch('bree.ocr.OCRMatcher._process_file'):
+            any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+            matcher = OCRMatcher(any_image._get_numpy_image())
+            matcher.find_bounding_boxes = MagicMock(return_value=(39, 53, [
+                OCRMatch(39, 49, Region(69, 84, 79, 15), 94.515457),
+                OCRMatch(49, 50, Region(148, 84, 7, 15), None),
+                OCRMatch(50, 53, Region(155, 84, 24, 12), 94.887207),
+            ]))
+
+            assert matcher.find('Wikipedia, the') == OCRMatch(39, 53, Region(69, 84, 110, 15), 94.515457)
+
+    @staticmethod
+    def test_finding_bounding_boxes_across_lines():
+        with patch('bree.ocr.OCRMatcher._process_file'):
+            any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+            matcher = OCRMatcher(any_image._get_numpy_image())
+            matcher.find_bounding_boxes = MagicMock(return_value=(59, 83, [
+                OCRMatch(59, 71, Region(220, 84, 101, 15), 96.515205),
+                OCRMatch(71, 72, Region(321, 84, -271, 15), None),
+                OCRMatch(72, 83, Region(50, 106, 79, 12), 96.697075)
+            ]))
 
             assert matcher.find('encyclopedia\n(Redirected') == OCRMatch(59, 83, Region(50, 84, 271, 34), 96.515205)
