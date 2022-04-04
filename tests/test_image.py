@@ -68,6 +68,14 @@ class TestImage:
             any_image.get_child_region(region)
 
     @staticmethod
+    def test_getting_text():
+        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+
+        actual = any_image.get_text()
+
+        assert actual == (RESOURCES_DIR / 'wiki-python-text.txt').read_text()
+
+    @staticmethod
     def test_finding_all_instances_of_an_image():
         any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
         needle = Image(RESOURCES_DIR / 'the.png')

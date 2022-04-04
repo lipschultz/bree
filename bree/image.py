@@ -9,6 +9,7 @@ from PIL import Image as PILImage
 from matplotlib.patches import Rectangle
 
 from bree.location import Region
+from bree.ocr import OCRMatcher
 
 FileReferenceType = Union[str, Path]
 
@@ -91,6 +92,16 @@ class BaseImage:
             raise OutOfBoundsError(f'region.left={region.left}.  Value exceeds size of image (height={self.height}).')
 
         return RegionInImage(self, region)
+
+    def get_text(self, *, language: Optional[str] = None, line_break: str = '\n', paragraph_break: str = '\n\n') -> str:
+        # TODO: Maybe `matcher` should be cached with `Screen` overriding that cache
+        matcher = OCRMatcher(
+            self._get_numpy_image(),
+            language=language,
+            line_break=line_break,
+            paragraph_break=paragraph_break
+        )
+        return matcher.text
 
     def find_image_all(
             self,

@@ -11,16 +11,23 @@ OCRMatch = namedtuple('OCRMatch', ['index_start', 'index_end', 'region', 'confid
 
 
 class OCRMatcher:
-    def __init__(self, image_numpy_array: np.ndarray, line_break: str = '\n', paragraph_break: str = '\n\n'):
+    def __init__(
+            self,
+            image_numpy_array: np.ndarray,
+            language: Optional[str] = None,
+            line_break: str = '\n',
+            paragraph_break: str = '\n\n'
+    ):
         self._image = image_numpy_array
 
+        self.language = language
         self.line_break_str = line_break
         self.paragraph_break_str = paragraph_break
 
         self._process_file()
 
     def _process_file(self):
-        df = pytesseract.image_to_data(self._image, output_type=pytesseract.Output.DATAFRAME)
+        df = pytesseract.image_to_data(self._image, lang=self.language, output_type=pytesseract.Output.DATAFRAME)
         df = df.dropna()
 
         final_string = ''
