@@ -97,7 +97,14 @@ class OCRMatcher:
     def text(self) -> str:
         return self._parsed_text
 
-    def find_bounding_boxes(self, needle: str, regex=False, regex_flags=0) -> Tuple[int, int, List[OCRMatch]]:
+    def find_bounding_boxes(
+            self,
+            needle: str,
+            start: Optional[int] = None,
+            end: Optional[int] = None,
+            regex: bool = False,
+            regex_flags=0
+    ) -> Tuple[int, int, List[OCRMatch]]:
         """
         Find needle within the parsed string, returning the start and end indices and the bounding boxes
         encompassing the whole tokens found by the search.
@@ -109,17 +116,24 @@ class OCRMatcher:
         """
         no_match_found = -1, -1, []
 
+        start = start or 0
+        end = end or len(self._parsed_text)
+        text_to_search = self._parsed_text[start:end]
+
         if regex:
-            match = re.search(needle, self._parsed_text, regex_flags)
+            match = re.search(needle, text_to_search, regex_flags)
             if match is None:
                 return no_match_found
             index_start, index_end = match.span()
         else:
-            index_start = self._parsed_text.find(needle)
+            index_start = text_to_search.find(needle)
             if index_start == -1:
                 return no_match_found
 
             index_end = index_start + len(needle)
+
+        index_start += start
+        index_end += start
 
         for i, token in enumerate(self._ocr_segments):
             if token.index_start <= index_start < token.index_end:

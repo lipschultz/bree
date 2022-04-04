@@ -415,6 +415,28 @@ class TestFindingBoundingBoxes:
             assert matcher.find_bounding_boxes('the', regex=True) == expected
 
     @staticmethod
+    def test_finding_complete_single_word_with_start_offset():
+        with patch('bree.ocr.OCRMatcher._process_file'):
+            any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+            matcher = OCRMatcher(any_image._get_numpy_image())
+            matcher._parsed_text = WIKI_PYTHON_TEXT_TEXT
+            matcher._ocr_segments = WIKI_PYTHON_TEXT_POSITIONS
+
+            expected = (50, 53, [OCRMatch(50, 53, Region(155, 84, 24, 12), 94.887207)])
+            assert matcher.find_bounding_boxes('the', start=20) == expected
+
+    @staticmethod
+    def test_finding_complete_single_word_using_regex_with_start_offset():
+        with patch('bree.ocr.OCRMatcher._process_file'):
+            any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+            matcher = OCRMatcher(any_image._get_numpy_image())
+            matcher._parsed_text = WIKI_PYTHON_TEXT_TEXT
+            matcher._ocr_segments = WIKI_PYTHON_TEXT_POSITIONS
+
+            expected = (50, 53, [OCRMatch(50, 53, Region(155, 84, 24, 12), 94.887207)])
+            assert matcher.find_bounding_boxes('the', start=20, regex=True) == expected
+
+    @staticmethod
     def test_finding_latter_part_of_single_word_finds_entire_words_bounding_box():
         with patch('bree.ocr.OCRMatcher._process_file'):
             any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
@@ -489,6 +511,26 @@ class TestFindingBoundingBoxes:
             ])
 
     @staticmethod
+    def test_specifying_end_before_token_found_fails_to_find_token():
+        with patch('bree.ocr.OCRMatcher._process_file'):
+            any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+            matcher = OCRMatcher(any_image._get_numpy_image())
+            matcher._parsed_text = WIKI_PYTHON_TEXT_TEXT
+            matcher._ocr_segments = WIKI_PYTHON_TEXT_POSITIONS
+
+            assert matcher.find_bounding_boxes('(Redirected', end=50) == (-1, -1, [])
+
+    @staticmethod
+    def test_specifying_end_before_token_found_fails_to_find_token_using_regex():
+        with patch('bree.ocr.OCRMatcher._process_file'):
+            any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+            matcher = OCRMatcher(any_image._get_numpy_image())
+            matcher._parsed_text = WIKI_PYTHON_TEXT_TEXT
+            matcher._ocr_segments = WIKI_PYTHON_TEXT_POSITIONS
+
+            assert matcher.find_bounding_boxes('(Redirected', end=50) == (-1, -1, [])
+
+    @staticmethod
     def test_finding_two_words_on_separate_lines():
         with patch('bree.ocr.OCRMatcher._process_file'):
             any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
@@ -535,6 +577,26 @@ class TestFindingBoundingBoxes:
             matcher._ocr_segments = WIKI_PYTHON_TEXT_POSITIONS
 
             assert matcher.find_bounding_boxes('NOT IN TEXT', regex=True) == (-1, -1, [])
+
+    @staticmethod
+    def test_specifying_start_after_token_found_fails_to_find_token():
+        with patch('bree.ocr.OCRMatcher._process_file'):
+            any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+            matcher = OCRMatcher(any_image._get_numpy_image())
+            matcher._parsed_text = WIKI_PYTHON_TEXT_TEXT
+            matcher._ocr_segments = WIKI_PYTHON_TEXT_POSITIONS
+
+            assert matcher.find_bounding_boxes('Wikipedia', start=100) == (-1, -1, [])
+
+    @staticmethod
+    def test_specifying_start_after_token_found_fails_to_find_token_using_regex():
+        with patch('bree.ocr.OCRMatcher._process_file'):
+            any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+            matcher = OCRMatcher(any_image._get_numpy_image())
+            matcher._parsed_text = WIKI_PYTHON_TEXT_TEXT
+            matcher._ocr_segments = WIKI_PYTHON_TEXT_POSITIONS
+
+            assert matcher.find_bounding_boxes('Wikipedia', start=100, regex=True) == (-1, -1, [])
 
 
 class TestFind:
