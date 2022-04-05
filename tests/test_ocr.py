@@ -598,6 +598,67 @@ class TestFindingBoundingBoxes:
 
             assert matcher.find_bounding_boxes('Wikipedia', start=100, regex=True) == (-1, -1, [])
 
+    @staticmethod
+    def test_finding_all_when_there_are_no_results_returns_empty_list():
+        with patch('bree.ocr.OCRMatcher._process_file'):
+            any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+            matcher = OCRMatcher(any_image._get_numpy_image())
+            matcher.find_bounding_boxes = MagicMock(return_value=(-1, -1, []))
+
+            assert matcher.find_bounding_boxes_all('NOT IN TEXT') == []
+
+    @staticmethod
+    def test_finding_all_when_there_is_one_result_returns_list_with_one_result():
+        with patch('bree.ocr.OCRMatcher._process_file'):
+            any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+            matcher = OCRMatcher(any_image._get_numpy_image())
+            matcher.find_bounding_boxes = MagicMock(side_effect=[
+                (3, 7, [OCRMatch(1, 8, Region(155, 84, 24, 12), 90)]),
+                (-1, -1, []),
+            ])
+
+            assert matcher.find_bounding_boxes_all('Wikipedia') == [
+                (3, 7, [OCRMatch(1, 8, Region(155, 84, 24, 12), 90)]),
+            ]
+
+    @staticmethod
+    def test_finding_all_when_there_is_one_result_but_multiple_boxes_returns_list_with_one_result():
+        with patch('bree.ocr.OCRMatcher._process_file'):
+            any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+            matcher = OCRMatcher(any_image._get_numpy_image())
+            matcher.find_bounding_boxes = MagicMock(side_effect=[
+                (39, 53, [
+                    OCRMatch(39, 49, Region(69, 84, 79, 15), 94.515457),
+                    OCRMatch(49, 50, Region(148, 84, 7, 15), None),
+                    OCRMatch(50, 53, Region(155, 84, 24, 12), 94.887207),
+                ]),
+                (-1, -1, []),
+            ])
+
+            assert matcher.find_bounding_boxes_all('Wikipedia') == [
+                (39, 53, [
+                    OCRMatch(39, 49, Region(69, 84, 79, 15), 94.515457),
+                    OCRMatch(49, 50, Region(148, 84, 7, 15), None),
+                    OCRMatch(50, 53, Region(155, 84, 24, 12), 94.887207),
+                ]),
+            ]
+
+    @staticmethod
+    def test_finding_all_when_there_are_many_results():
+        with patch('bree.ocr.OCRMatcher._process_file'):
+            any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+            matcher = OCRMatcher(any_image._get_numpy_image())
+            matcher.find_bounding_boxes = MagicMock(side_effect=[
+                (3, 7, [OCRMatch(1, 8, Region(155, 84, 24, 12), 90)]),
+                (72, 83, [OCRMatch(72, 83, Region(50, 106, 79, 12), 96.697075)]),
+                (-1, -1, []),
+            ])
+
+            assert matcher.find_bounding_boxes_all('Wikipedia') == [
+                (3, 7, [OCRMatch(1, 8, Region(155, 84, 24, 12), 90)]),
+                (72, 83, [OCRMatch(72, 83, Region(50, 106, 79, 12), 96.697075)]),
+            ]
+
 
 class TestFind:
     @staticmethod
@@ -610,7 +671,7 @@ class TestFind:
             matcher.find_bounding_boxes = MagicMock(return_value=(-1, -1, []))
 
             assert matcher.find('NOT IN TEXT') is None
-            matcher.find_bounding_boxes.assert_called_once_with('NOT IN TEXT')
+            matcher.find_bounding_boxes.assert_called_once_with('NOT IN TEXT', None, None, False, 0)
 
     @staticmethod
     def test_finding_one_bounding_box_where_indices_match_text_result_indices():
@@ -655,3 +716,42 @@ class TestFind:
             ]))
 
             assert matcher.find('encyclopedia\n(Redirected') == OCRMatch(59, 83, Region(50, 84, 271, 34), 96.515205)
+
+    @staticmethod
+    def test_finding_all_when_there_are_no_results_returns_empty_list():
+        with patch('bree.ocr.OCRMatcher._process_file'):
+            any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+            matcher = OCRMatcher(any_image._get_numpy_image())
+            matcher.find = MagicMock(return_value=None)
+
+            assert matcher.find_all('NOT IN TEXT') == []
+
+    @staticmethod
+    def test_finding_all_when_there_is_one_result_returns_list_with_one_result():
+        with patch('bree.ocr.OCRMatcher._process_file'):
+            any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+            matcher = OCRMatcher(any_image._get_numpy_image())
+            matcher.find = MagicMock(side_effect=[
+                OCRMatch(1, 8, Region(155, 84, 24, 12), 90),
+                None,
+            ])
+
+            assert matcher.find_all('Wikipedia') == [
+                OCRMatch(1, 8, Region(155, 84, 24, 12), 90),
+            ]
+
+    @staticmethod
+    def test_finding_all_when_there_are_many_results():
+        with patch('bree.ocr.OCRMatcher._process_file'):
+            any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+            matcher = OCRMatcher(any_image._get_numpy_image())
+            matcher.find = MagicMock(side_effect=[
+                OCRMatch(1, 8, Region(155, 84, 24, 12), 90),
+                OCRMatch(72, 83, Region(50, 106, 79, 12), 96.697075),
+                None,
+            ])
+
+            assert matcher.find_all('Wikipedia') == [
+                OCRMatch(1, 8, Region(155, 84, 24, 12), 90),
+                OCRMatch(72, 83, Region(50, 106, 79, 12), 96.697075),
+            ]

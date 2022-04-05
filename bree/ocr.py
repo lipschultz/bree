@@ -150,8 +150,34 @@ class OCRMatcher:
                 return index_start, index_end, tokens
         return no_match_found
 
-    def find(self, needle: str, *args, **kwargs) -> Optional[OCRMatch]:
-        index_start, index_end, bounding_boxes = self.find_bounding_boxes(needle, *args, **kwargs)
+    def find_bounding_boxes_all(
+            self,
+            needle: str,
+            start: Optional[int] = None,
+            end: Optional[int] = None,
+            regex: bool = False,
+            regex_flags=0
+    ) -> List[Tuple[int, int, List[OCRMatch]]]:
+        results = []
+        start = start or 0
+
+        found = self.find_bounding_boxes(needle, start, end, regex, regex_flags)
+        while found[0] != -1:
+            results.append(found)
+            start = found[1]
+            found = self.find_bounding_boxes(needle, start, end, regex, regex_flags)
+
+        return results
+
+    def find(
+            self,
+            needle: str,
+            start: Optional[int] = None,
+            end: Optional[int] = None,
+            regex: bool = False,
+            regex_flags=0
+    ) -> Optional[OCRMatch]:
+        index_start, index_end, bounding_boxes = self.find_bounding_boxes(needle, start, end, regex, regex_flags)
 
         if len(bounding_boxes) > 0:
             return OCRMatch(
@@ -167,3 +193,22 @@ class OCRMatcher:
             )
 
         return None
+
+    def find_all(
+            self,
+            needle: str,
+            start: Optional[int] = None,
+            end: Optional[int] = None,
+            regex: bool = False,
+            regex_flags=0
+    ) -> List[OCRMatch]:
+        results = []
+        start = start or 0
+
+        found = self.find(needle, start, end, regex, regex_flags)
+        while found is not None:
+            results.append(found)
+            start = found[1]
+            found = self.find(needle, start, end, regex, regex_flags)
+
+        return results
