@@ -43,6 +43,9 @@ def _find_all_within(
 
 
 class BaseImage:
+    def __init__(self):
+        self._ocr_matchers = {}
+
     def _get_numpy_image(self) -> np.ndarray:
         raise NotImplementedError
 
@@ -93,14 +96,25 @@ class BaseImage:
 
         return RegionInImage(self, region)
 
-    def get_text(self, *, language: Optional[str] = None, line_break: str = '\n', paragraph_break: str = '\n\n') -> str:
-        # TODO: Maybe `matcher` should be cached with `Screen` overriding that cache
-        matcher = OCRMatcher(
+    def _create_ocr_matcher(self, language, line_break, paragraph_break) -> OCRMatcher:
+        return OCRMatcher(
             self._get_numpy_image(),
             language=language,
             line_break=line_break,
             paragraph_break=paragraph_break
         )
+
+    def _get_ocr_matcher(self, language, line_break, paragraph_break):
+        # TODO: OCRMatcher can probably be rewritten so it only really depends on language (i.e. _process can be run
+        # TODO: when-needed and so line_break and paragraph_break can be updated)
+        matcher = self._ocr_matchers.get((language, line_break, paragraph_break))
+        if matcher is None:
+            matcher = self._create_ocr_matcher(language, line_break, paragraph_break)
+            self._ocr_matchers[(language, line_break, paragraph_break)] = matcher
+        return matcher
+
+    def get_text(self, *, language: Optional[str] = None, line_break: str = '\n', paragraph_break: str = '\n\n') -> str:
+        matcher = self._get_ocr_matcher(language, line_break, paragraph_break)
         return matcher.text
 
     def find_image_all(
@@ -354,6 +368,9 @@ class MatchedRegionInImage(RegionInImage):
 
 
 class Screen(BaseImage):
+    def _get_ocr_matcher(self, language, line_break, paragraph_break):
+        return self._create_ocr_matcher(language, line_break, paragraph_break)
+
     @classmethod
     def _get_pil_image(cls):
         return pyautogui.screenshot()

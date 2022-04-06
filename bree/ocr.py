@@ -200,7 +200,7 @@ class OCRMatcher:
             start: Optional[int] = None,
             end: Optional[int] = None,
             regex: bool = False,
-            regex_flags=0
+            regex_flags=0,
     ) -> List[OCRMatch]:
         results = []
         start = start or 0

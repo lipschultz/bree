@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, call
 
 import pytest
 
-from bree.image import Image, OutOfBoundsError, MatchedRegionInImage
+from bree.image import Image, OutOfBoundsError, MatchedRegionInImage, Screen
 from bree.location import Region
 
 RESOURCES_DIR = Path(__file__).parent / 'resources'
@@ -70,10 +70,40 @@ class TestImage:
     @staticmethod
     def test_getting_text():
         any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        mock_ocr_matcher = MagicMock()
+        mock_ocr_matcher.text = 'any value'
+        any_image._get_ocr_matcher = MagicMock(return_value=mock_ocr_matcher)
 
         actual = any_image.get_text()
 
-        assert actual == (RESOURCES_DIR / 'wiki-python-text.txt').read_text()
+        any_image._get_ocr_matcher.assert_called_once()
+        assert actual == 'any value'
+
+    @staticmethod
+    def test_getting_ocr_matcher_for_same_language_only_creates_it_once():
+        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        mock_ocr_matcher = MagicMock()
+        any_image._create_ocr_matcher = MagicMock(return_value=mock_ocr_matcher)
+
+        any_image._get_ocr_matcher('eng', '\n', '\n\n')
+        any_image._get_ocr_matcher('eng', '\n', '\n\n')
+
+        any_image._create_ocr_matcher.assert_called_once()
+
+    @staticmethod
+    def test_getting_ocr_matcher_for_different_language_creates_different_matchers():
+        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        mock_ocr_matcher = MagicMock()
+        any_image._create_ocr_matcher = MagicMock(return_value=mock_ocr_matcher)
+
+        any_image._get_ocr_matcher('eng', '\n', '\n\n')
+        any_image._get_ocr_matcher('asd', '\n', '\n\n')
+
+        assert any_image._create_ocr_matcher.call_count == 2
+        any_image._create_ocr_matcher.assert_has_calls([
+            call('eng', '\n', '\n\n'),
+            call('asd', '\n', '\n\n'),
+        ])
 
     @staticmethod
     def test_finding_all_instances_of_an_image():
@@ -581,3 +611,21 @@ class TestChildImage:
         actual_region = grandchild_image.region_below(size, absolute)
 
         assert actual_region == expected_region
+
+
+class TestScreen:
+
+    @staticmethod
+    def test_getting_ocr_matcher_for_same_language_creates_it_each_time():
+        any_image = Screen()
+        mock_ocr_matcher = MagicMock()
+        any_image._create_ocr_matcher = MagicMock(return_value=mock_ocr_matcher)
+
+        any_image._get_ocr_matcher('eng', '\n', '\n\n')
+        any_image._get_ocr_matcher('eng', '\n', '\n\n')
+
+        assert any_image._create_ocr_matcher.call_count == 2
+        any_image._create_ocr_matcher.assert_has_calls([
+            call('eng', '\n', '\n\n'),
+            call('eng', '\n', '\n\n'),
+        ])
