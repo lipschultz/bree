@@ -6,6 +6,7 @@ import pytest
 
 from bree.image import Image, OutOfBoundsError, MatchedRegionInImage, Screen, RegionInImage
 from bree.location import Region
+from bree.ocr import OCRMatch
 
 RESOURCES_DIR = Path(__file__).parent / 'resources'
 
@@ -124,6 +125,58 @@ class TestImage:
         assert expected == {image.region for image in found}
 
     @staticmethod
+    def test_finding_all_instances_of_text():
+        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        mock_ocr_matcher = MagicMock()
+        mock_ocr_matcher.find_all = MagicMock(return_value=[
+            OCRMatch(1, 8, Region(155, 84, 24, 12), 90),
+            OCRMatch(72, 83, Region(50, 106, 79, 12), 96.697075),
+        ])
+        any_image._get_ocr_matcher = MagicMock(return_value=mock_ocr_matcher)
+
+        found = list(any_image.find_text_all(
+            'text',
+            0.89,
+            regex=True,
+            regex_flags=13,
+            language='eng',
+            line_break='\n',
+            paragraph_break='\n\n'
+        ))
+
+        expected = [
+            MatchedRegionInImage(any_image, Region(155, 84, 24, 12), 90),
+            MatchedRegionInImage(any_image, Region(50, 106, 79, 12), 96.697075),
+        ]
+
+        any_image._get_ocr_matcher.assert_called_once_with('eng', '\n', '\n\n')
+        mock_ocr_matcher.find_all.assert_called_once_with('text', regex=True, regex_flags=13)
+        assert found == expected
+
+    @staticmethod
+    def test_finding_all_instances_of_text_when_no_results_found():
+        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        mock_ocr_matcher = MagicMock()
+        mock_ocr_matcher.find_all = MagicMock(return_value=[])
+        any_image._get_ocr_matcher = MagicMock(return_value=mock_ocr_matcher)
+
+        found = list(any_image.find_text_all(
+            'text',
+            0.89,
+            regex=True,
+            regex_flags=13,
+            language='eng',
+            line_break='\n',
+            paragraph_break='\n\n',
+        ))
+
+        expected = []
+
+        any_image._get_ocr_matcher.assert_called_once_with('eng', '\n', '\n\n')
+        mock_ocr_matcher.find_all.assert_called_once_with('text', regex=True, regex_flags=13)
+        assert found == expected
+
+    @staticmethod
     def test_finding_best_match_image():
         any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
         needle = Image(RESOURCES_DIR / 'the.png')
@@ -132,6 +185,61 @@ class TestImage:
 
         assert found.parent_image == any_image
         assert found.region == Region(x=1046, y=142, width=30, height=19)
+
+    @staticmethod
+    def test_finding_best_match_text():
+        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image.find_text_all = MagicMock(return_value=[
+            MatchedRegionInImage(any_image, Region(155, 84, 24, 12), 90),
+            MatchedRegionInImage(any_image, Region(50, 106, 79, 12), 96.697075),
+        ])
+
+        found = any_image.find_text(
+            'text',
+            0.89,
+            regex=True,
+            regex_flags=13,
+            language='eng',
+            line_break='\n',
+            paragraph_break='\n\n',
+        )
+
+        assert found == MatchedRegionInImage(any_image, Region(50, 106, 79, 12), 96.697075)
+        any_image.find_text_all.assert_called_once_with(
+            'text',
+            0.89,
+            regex=True,
+            regex_flags=13,
+            language='eng',
+            line_break='\n',
+            paragraph_break='\n\n',
+        )
+
+    @staticmethod
+    def test_finding_best_match_text_returns_none_on_no_results_found():
+        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image.find_text_all = MagicMock(return_value=[])
+
+        found = any_image.find_text(
+            'text',
+            0.89,
+            regex=True,
+            regex_flags=13,
+            language='eng',
+            line_break='\n',
+            paragraph_break='\n\n',
+        )
+
+        assert found is None
+        any_image.find_text_all.assert_called_once_with(
+            'text',
+            0.89,
+            regex=True,
+            regex_flags=13,
+            language='eng',
+            line_break='\n',
+            paragraph_break='\n\n',
+        )
 
     @staticmethod
     def test_wait_until_image_appears_returns_empty_list_when_needle_not_found_in_image():

@@ -136,12 +136,73 @@ class BaseImage:
             for region, score in found
         )
 
+    def find_text_all(
+            self,
+            needle: str,
+            confidence: float = 0.9,
+            *,
+            regex: bool = False,
+            regex_flags=0,
+            language: Optional[str] = None,
+            line_break: str = '\n',
+            paragraph_break: str = '\n\n',
+    ) -> Iterable['MatchedRegionInImage']:
+        matcher = self._get_ocr_matcher(language, line_break, paragraph_break)
+        found = matcher.find_all(needle, regex=regex, regex_flags=regex_flags)
+
+        return (
+            MatchedRegionInImage.from_region_in_image(self.get_child_region(result.region), result.confidence)
+            for result in found
+            if result.confidence >= confidence
+        )
+
+    def find_all(
+            self,
+            needle: Union[str, 'BaseImage'],
+            confidence: Optional[float] = None,
+            **kwargs
+    ) -> Iterable['MatchedRegionInImage']:
+        if isinstance(needle, str):
+            return self.find_text_all(
+                needle,
+                *([confidence] if confidence is not None else []),
+                **kwargs,
+            )
+        elif isinstance(needle, BaseImage):
+            return self.find_image_all(
+                needle,
+                *([confidence] if confidence is not None else []),
+                **kwargs,
+            )
+        else:
+            raise TypeError(f'Unrecognized type for needle: {type(needle)}')
+
     def find_image(self, needle: 'BaseImage', *args, **kwargs) -> Optional['MatchedRegionInImage']:
         result = self.find_image_all(needle, *args, **kwargs)
         result = sorted(result, key=lambda res: res.confidence, reverse=True)
         if result:
             return result[0]
         return None
+
+    def find_text(self, needle: str, *args, **kwargs) -> Optional['MatchedRegionInImage']:
+        result = self.find_text_all(needle, *args, **kwargs)
+        result = sorted(result, key=lambda res: res.confidence, reverse=True)
+        if result:
+            return result[0]
+        return None
+
+    def find(
+            self,
+            needle: Union[str, 'BaseImage'],
+            *args,
+            **kwargs
+    ) -> Optional['MatchedRegionInImage']:
+        if isinstance(needle, str):
+            return self.find_text(needle, *args, **kwargs)
+        elif isinstance(needle, BaseImage):
+            return self.find_image(needle, *args, **kwargs)
+        else:
+            raise TypeError(f'Unrecognized type for needle: {type(needle)}')
 
     def wait_until_image_appears(
             self,
