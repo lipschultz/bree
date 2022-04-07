@@ -278,7 +278,7 @@ class RegionInImage(BaseImage):
 
         return self._parent_image._get_numpy_image()[y_min:y_max, x_min:x_max, :]
 
-    def region_left(self, size: Optional[int] = None, absolute=True) -> Region:
+    def raw_region_left(self, size: Optional[int] = None, absolute=True) -> Region:
         region = self.absolute_region if absolute else self.region
 
         if size is None:
@@ -293,7 +293,15 @@ class RegionInImage(BaseImage):
             region.height,
         )
 
-    def region_above(self, size: Optional[int] = None, absolute=True) -> Region:
+    def region_left(self, size: Optional[int] = None, absolute=True) -> 'RegionInImage':
+        region = self.raw_region_left(size, absolute)
+
+        return RegionInImage(
+            self._parent_image if not absolute else self._get_root_image(),
+            region
+        )
+
+    def raw_region_above(self, size: Optional[int] = None, absolute=True) -> Region:
         region = self.absolute_region if absolute else self.region
 
         if size is None:
@@ -308,7 +316,15 @@ class RegionInImage(BaseImage):
             region.y - top_edge,
         )
 
-    def region_right(self, size: Optional[int] = None, absolute=True) -> Region:
+    def region_above(self, size: Optional[int] = None, absolute=True) -> 'RegionInImage':
+        region = self.raw_region_above(size, absolute)
+
+        return RegionInImage(
+            self._parent_image if not absolute else self._get_root_image(),
+            region
+        )
+
+    def raw_region_right(self, size: Optional[int] = None, absolute=True) -> Region:
         region = self.absolute_region if absolute else self.region
 
         left_edge = region.right + 1
@@ -324,7 +340,15 @@ class RegionInImage(BaseImage):
             region.height,
         )
 
-    def region_below(self, size: Optional[int] = None, absolute=True) -> Region:
+    def region_right(self, size: Optional[int] = None, absolute=True) -> 'RegionInImage':
+        region = self.raw_region_right(size, absolute)
+
+        return RegionInImage(
+            self._parent_image if not absolute else self._get_root_image(),
+            region
+        )
+
+    def raw_region_below(self, size: Optional[int] = None, absolute=True) -> Region:
         region = self.absolute_region if absolute else self.region
 
         top_edge = region.bottom + 1
@@ -338,6 +362,14 @@ class RegionInImage(BaseImage):
             top_edge,
             region.width,
             (total_height - top_edge) if size is None else size,
+        )
+
+    def region_below(self, size: Optional[int] = None, absolute=True) -> 'RegionInImage':
+        region = self.raw_region_below(size, absolute)
+
+        return RegionInImage(
+            self._parent_image if not absolute else self._get_root_image(),
+            region
         )
 
 
