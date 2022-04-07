@@ -38,8 +38,11 @@ class OCRMatcher:
                 index_mapping.append(OCRMatch(
                     len(final_string),
                     len(final_string) + len(self.paragraph_break_str),
-                    Region.from_points(previous_region.right, previous_region.top, paragraph.iloc[0]['left'],
-                                       previous_region.bottom),
+                    Region.from_points(
+                        previous_region.right,
+                        previous_region.top,
+                        paragraph.iloc[0]['left'],
+                        previous_region.bottom),
                     None
                 ))
                 final_string += self.paragraph_break_str
@@ -85,7 +88,7 @@ class OCRMatcher:
                         len(final_string),
                         len(final_string) + len(row['text']),
                         Region(row['left'], row['top'], row['width'], row['height']),
-                        row['conf']
+                        row['conf'] / 100
                     ))
                     final_string += row['text']
                     new_line = False
