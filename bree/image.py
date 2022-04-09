@@ -1,5 +1,6 @@
+import itertools
 from pathlib import Path
-from typing import Union, Iterable, Tuple, Optional, List
+from typing import Union, Iterable, Tuple, Optional, List, Collection
 
 import cv2
 import matplotlib.pyplot as plt
@@ -119,26 +120,33 @@ class BaseImage:
 
     def find_image_all(
             self,
-            needle: 'BaseImage',
+            needle: Union['BaseImage', Collection['BaseImage']],
             confidence: float = 0.99,
             *,
             match_method=cv2.TM_SQDIFF_NORMED
     ) -> Iterable['MatchedRegionInImage']:
-        found = _find_all_within(
-            needle._get_numpy_image(),
-            self._get_numpy_image(),
-            confidence,
-            match_method=match_method
+        if isinstance(needle, BaseImage):
+            needle = [needle]
+
+        numpy_image = self._get_numpy_image()
+        all_found = itertools.chain.from_iterable(
+            _find_all_within(
+                n._get_numpy_image(),
+                numpy_image,
+                confidence,
+                match_method=match_method
+            )
+            for n in needle
         )
 
         return (
             MatchedRegionInImage.from_region_in_image(self.get_child_region(region), score)
-            for region, score in found
+            for region, score in all_found
         )
 
     def find_text_all(
             self,
-            needle: str,
+            needle: Union[str, Collection[str]],
             confidence: float = 0.9,
             *,
             regex: bool = False,
@@ -147,12 +155,19 @@ class BaseImage:
             line_break: str = '\n',
             paragraph_break: str = '\n\n',
     ) -> Iterable['MatchedRegionInImage']:
+        if isinstance(needle, str):
+            needle = [needle]
+
         matcher = self._get_ocr_matcher(language, line_break, paragraph_break)
-        found = matcher.find_all(needle, regex=regex, regex_flags=regex_flags)
+
+        all_found = itertools.chain.from_iterable(
+            matcher.find_all(n, regex=regex, regex_flags=regex_flags)
+            for n in needle
+        )
 
         return (
             MatchedRegionInImage.from_region_in_image(self.get_child_region(result.region), result.confidence)
-            for result in found
+            for result in all_found
             if result.confidence >= confidence
         )
 
@@ -177,14 +192,24 @@ class BaseImage:
         else:
             raise TypeError(f'Unrecognized type for needle: {type(needle)}')
 
-    def find_image(self, needle: 'BaseImage', *args, **kwargs) -> Optional['MatchedRegionInImage']:
+    def find_image(
+            self,
+            needle: Union['BaseImage', Collection['BaseImage']],
+            *args,
+            **kwargs
+    ) -> Optional['MatchedRegionInImage']:
         result = self.find_image_all(needle, *args, **kwargs)
         result = sorted(result, key=lambda res: res.confidence, reverse=True)
         if result:
             return result[0]
         return None
 
-    def find_text(self, needle: str, *args, **kwargs) -> Optional['MatchedRegionInImage']:
+    def find_text(
+            self,
+            needle: Union[str, Collection[str]],
+            *args,
+            **kwargs
+    ) -> Optional['MatchedRegionInImage']:
         result = self.find_text_all(needle, *args, **kwargs)
         result = sorted(result, key=lambda res: res.confidence, reverse=True)
         if result:
@@ -227,7 +252,7 @@ class BaseImage:
 
     def wait_until_image_appears(
             self,
-            needle: 'BaseImage',
+            needle: Union['BaseImage', Collection['BaseImage']],
             confidence: float = 0.99,
             timeout: float = 5,
             *,
@@ -245,7 +270,7 @@ class BaseImage:
 
     def wait_until_text_appears(
             self,
-            needle: str,
+            needle: Union[str, Collection[str]],
             confidence: float = 0.9,
             timeout: float = 5,
             *,
@@ -291,7 +316,7 @@ class BaseImage:
 
     def wait_until_image_vanishes(
             self,
-            needle: 'BaseImage',
+            needle: Union['BaseImage', Collection['BaseImage']],
             confidence: float = 0.9,
             timeout: float = 5,
             *,
@@ -309,7 +334,7 @@ class BaseImage:
 
     def wait_until_text_vanishes(
             self,
-            needle: str,
+            needle: Union[str, Collection[str]],
             confidence: float = 0.99,
             timeout: float = 5,
             *,
@@ -340,10 +365,10 @@ class BaseImage:
             return self.contains_text(needle, *args, **kwargs)
         raise TypeError(f'Unsupported needle type: {type(needle)}')
 
-    def contains_image(self, needle: 'BaseImage', *args, **kwargs) -> bool:
+    def contains_image(self, needle: Union['BaseImage', Collection['BaseImage']], *args, **kwargs) -> bool:
         return len(self.wait_until_image_appears(needle, *args, **kwargs)) > 0
 
-    def contains_text(self, needle: str, *args, **kwargs) -> bool:
+    def contains_text(self, needle: Union[str, Collection[str]], *args, **kwargs) -> bool:
         return len(self.wait_until_text_appears(needle, *args, **kwargs)) > 0
 
     def __contains__(self, needle: Union[str, 'BaseImage']) -> bool:
