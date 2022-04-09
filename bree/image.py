@@ -204,6 +204,27 @@ class BaseImage:
         else:
             raise TypeError(f'Unrecognized type for needle: {type(needle)}')
 
+    def _wait_until_needle_appears(
+            self,
+            needle,
+            confidence: float,
+            timeout: float,
+            scans_per_second: float,
+            find_method,
+            **find_all_args,
+    ) -> List['MatchedRegionInImage']:
+        scan_count = 0 if timeout * scans_per_second > 0 else -1  # We want the loop to occur at least once
+        result = []
+        while scan_count < timeout * scans_per_second:
+            result = list(find_method(needle, confidence, **find_all_args))
+            scan_count += 1
+            if len(result) > 0:
+                break
+            else:
+                pyautogui.sleep(1/scans_per_second)
+
+        return result
+
     def wait_until_image_appears(
             self,
             needle: 'BaseImage',
@@ -213,30 +234,53 @@ class BaseImage:
             match_method=cv2.TM_SQDIFF_NORMED,
             scans_per_second: float = 3,
     ) -> List['MatchedRegionInImage']:
-        scan_count = 0 if timeout * scans_per_second > 0 else -1  # We want the loop to occur at least once
-        result = []
-        while scan_count < timeout * scans_per_second:
-            result = list(self.find_image_all(needle, confidence, match_method=match_method))
-            scan_count += 1
-            if len(result) > 0:
-                break
-            else:
-                pyautogui.sleep(1/scans_per_second)
+        return self._wait_until_needle_appears(
+            needle,
+            confidence,
+            timeout,
+            scans_per_second,
+            self.find_image_all,
+            match_method=match_method,
+        )
 
-        return result
-
-    def wait_until_image_vanishes(
+    def wait_until_text_appears(
             self,
-            needle: 'BaseImage',
-            confidence: float = 0.99,
+            needle: str,
+            confidence: float = 0.9,
             timeout: float = 5,
             *,
-            match_method=cv2.TM_SQDIFF_NORMED,
+            regex: bool = False,
+            regex_flags=0,
+            language: Optional[str] = None,
+            line_break: str = '\n',
+            paragraph_break: str = '\n\n',
             scans_per_second: float = 3,
+    ) -> List['MatchedRegionInImage']:
+        return self._wait_until_needle_appears(
+            needle,
+            confidence,
+            timeout,
+            scans_per_second,
+            self.find_text_all,
+            regex=regex,
+            regex_flags=regex_flags,
+            language=language,
+            line_break=line_break,
+            paragraph_break=paragraph_break,
+        )
+
+    def _wait_until_needle_vanishes(
+            self,
+            needle,
+            confidence: float,
+            timeout: float,
+            scans_per_second: float,
+            find_method,
+            **find_all_args,
     ) -> bool:
         scan_count = 0 if timeout * scans_per_second > 0 else -1  # We want the loop to occur at least once
         while scan_count < timeout * scans_per_second:
-            result = list(self.find_image_all(needle, confidence, match_method=match_method))
+            result = list(find_method(needle, confidence, **find_all_args))
             scan_count += 1
             if len(result) == 0:
                 return True
@@ -245,15 +289,64 @@ class BaseImage:
 
         return False
 
-    def contains(self, needle: 'BaseImage', *args, **kwargs) -> bool:
+    def wait_until_image_vanishes(
+            self,
+            needle: 'BaseImage',
+            confidence: float = 0.9,
+            timeout: float = 5,
+            *,
+            match_method=cv2.TM_SQDIFF_NORMED,
+            scans_per_second: float = 3,
+    ) -> bool:
+        return self._wait_until_needle_vanishes(
+            needle,
+            confidence,
+            timeout,
+            scans_per_second,
+            self.find_image_all,
+            match_method=match_method,
+        )
+
+    def wait_until_text_vanishes(
+            self,
+            needle: str,
+            confidence: float = 0.99,
+            timeout: float = 5,
+            *,
+            regex: bool = False,
+            regex_flags=0,
+            language: Optional[str] = None,
+            line_break: str = '\n',
+            paragraph_break: str = '\n\n',
+            scans_per_second: float = 3,
+    ) -> bool:
+        return self._wait_until_needle_vanishes(
+            needle,
+            confidence,
+            timeout,
+            scans_per_second,
+            self.find_text_all,
+            regex=regex,
+            regex_flags=regex_flags,
+            language=language,
+            line_break=line_break,
+            paragraph_break=paragraph_break,
+        )
+
+    def contains(self, needle: Union[str, 'BaseImage'], *args, **kwargs) -> bool:
         if isinstance(needle, BaseImage):
             return self.contains_image(needle, *args, **kwargs)
+        elif isinstance(needle, str):
+            return self.contains_text(needle, *args, **kwargs)
         raise TypeError(f'Unsupported needle type: {type(needle)}')
 
     def contains_image(self, needle: 'BaseImage', *args, **kwargs) -> bool:
         return len(self.wait_until_image_appears(needle, *args, **kwargs)) > 0
 
-    def __contains__(self, needle: 'BaseImage') -> bool:
+    def contains_text(self, needle: str, *args, **kwargs) -> bool:
+        return len(self.wait_until_text_appears(needle, *args, **kwargs)) > 0
+
+    def __contains__(self, needle: Union[str, 'BaseImage']) -> bool:
         return self.contains(needle, timeout=0)
 
 

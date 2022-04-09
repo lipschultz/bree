@@ -20,19 +20,28 @@ class OCRMatcher:
     ):
         self._image = image_numpy_array
 
-        self.language = language
+        self._language = language
         self.line_break_str = line_break
         self.paragraph_break_str = paragraph_break
 
+        self._df = None
         self._process_file()
 
-    def _process_file(self):
-        df = pytesseract.image_to_data(self._image, lang=self.language, output_type=pytesseract.Output.DATAFRAME)
-        df = df.dropna()
+    @property
+    def language(self):
+        return self._language
 
+    def _get_raw_ocr(self):
+        if self._df is None:
+            df = pytesseract.image_to_data(self._image, lang=self._language, output_type=pytesseract.Output.DATAFRAME)
+            df = df.dropna()
+            self._df = df
+        return self._df
+
+    def _process_file(self):
         final_string = ''
         index_mapping = []
-        for _, paragraph in df.groupby(['page_num', 'block_num', 'par_num']):
+        for _, paragraph in self._get_raw_ocr().groupby(['page_num', 'block_num', 'par_num']):
             if len(final_string) > 0:
                 previous_region = index_mapping[-1].region
                 index_mapping.append(OCRMatch(
