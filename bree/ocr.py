@@ -21,11 +21,9 @@ class OCRMatcher:
         self._image = image_numpy_array
 
         self._language = language
-        self.line_break_str = line_break
-        self.paragraph_break_str = paragraph_break
 
         self._df = None
-        self._process_file()
+        self.process(line_break, paragraph_break)
 
     @property
     def language(self):
@@ -38,7 +36,7 @@ class OCRMatcher:
             self._df = df
         return self._df
 
-    def _process_file(self):
+    def process(self, line_break='\n', paragraph_break='\n\n'):
         final_string = ''
         index_mapping = []
         for _, paragraph in self._get_raw_ocr().groupby(['page_num', 'block_num', 'par_num']):
@@ -46,7 +44,7 @@ class OCRMatcher:
                 previous_region = index_mapping[-1].region
                 index_mapping.append(OCRMatch(
                     len(final_string),
-                    len(final_string) + len(self.paragraph_break_str),
+                    len(final_string) + len(paragraph_break),
                     Region.from_points(
                         previous_region.right,
                         previous_region.top,
@@ -54,7 +52,7 @@ class OCRMatcher:
                         previous_region.bottom),
                     None
                 ))
-                final_string += self.paragraph_break_str
+                final_string += paragraph_break
 
             new_paragraph = True
             for _, line in paragraph.groupby('line_num'):
@@ -62,7 +60,7 @@ class OCRMatcher:
                     previous_region = index_mapping[-1].region
                     index_mapping.append(OCRMatch(
                         len(final_string),
-                        len(final_string) + len(self.line_break_str),
+                        len(final_string) + len(line_break),
                         Region.from_points(
                             previous_region.right,
                             previous_region.top,
@@ -71,7 +69,7 @@ class OCRMatcher:
                         ),
                         None
                     ))
-                    final_string += self.line_break_str
+                    final_string += line_break
 
                 new_paragraph = False
 

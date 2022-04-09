@@ -406,7 +406,7 @@ class TestOCRMatcher:
 class TestFindingBoundingBoxes:
     @staticmethod
     def test_finding_complete_single_word():
-        with patch('bree.ocr.OCRMatcher._process_file'):
+        with patch('bree.ocr.OCRMatcher.process'):
             any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
             matcher = OCRMatcher(any_image._get_numpy_image())
             matcher._parsed_text = WIKI_PYTHON_TEXT_TEXT
@@ -417,7 +417,7 @@ class TestFindingBoundingBoxes:
 
     @staticmethod
     def test_finding_complete_single_word_using_regex():
-        with patch('bree.ocr.OCRMatcher._process_file'):
+        with patch('bree.ocr.OCRMatcher.process'):
             any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
             matcher = OCRMatcher(any_image._get_numpy_image())
             matcher._parsed_text = WIKI_PYTHON_TEXT_TEXT
@@ -428,7 +428,7 @@ class TestFindingBoundingBoxes:
 
     @staticmethod
     def test_finding_complete_single_word_with_start_offset():
-        with patch('bree.ocr.OCRMatcher._process_file'):
+        with patch('bree.ocr.OCRMatcher.process'):
             any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
             matcher = OCRMatcher(any_image._get_numpy_image())
             matcher._parsed_text = WIKI_PYTHON_TEXT_TEXT
@@ -439,7 +439,7 @@ class TestFindingBoundingBoxes:
 
     @staticmethod
     def test_finding_complete_single_word_using_regex_with_start_offset():
-        with patch('bree.ocr.OCRMatcher._process_file'):
+        with patch('bree.ocr.OCRMatcher.process'):
             any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
             matcher = OCRMatcher(any_image._get_numpy_image())
             matcher._parsed_text = WIKI_PYTHON_TEXT_TEXT
@@ -450,7 +450,7 @@ class TestFindingBoundingBoxes:
 
     @staticmethod
     def test_finding_latter_part_of_single_word_finds_entire_words_bounding_box():
-        with patch('bree.ocr.OCRMatcher._process_file'):
+        with patch('bree.ocr.OCRMatcher.process'):
             any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
             matcher = OCRMatcher(any_image._get_numpy_image())
             matcher._parsed_text = WIKI_PYTHON_TEXT_TEXT
@@ -462,7 +462,7 @@ class TestFindingBoundingBoxes:
 
     @staticmethod
     def test_finding_beginning_part_of_single_word_finds_entire_words_bounding_box():
-        with patch('bree.ocr.OCRMatcher._process_file'):
+        with patch('bree.ocr.OCRMatcher.process'):
             any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
             matcher = OCRMatcher(any_image._get_numpy_image())
             matcher._parsed_text = WIKI_PYTHON_TEXT_TEXT
@@ -473,7 +473,7 @@ class TestFindingBoundingBoxes:
 
     @staticmethod
     def test_finding_complete_single_word_with_preceding_space():
-        with patch('bree.ocr.OCRMatcher._process_file'):
+        with patch('bree.ocr.OCRMatcher.process'):
             any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
             matcher = OCRMatcher(any_image._get_numpy_image())
             matcher._parsed_text = WIKI_PYTHON_TEXT_TEXT
@@ -486,7 +486,7 @@ class TestFindingBoundingBoxes:
 
     @staticmethod
     def test_finding_complete_single_word_with_space_before_and_after():
-        with patch('bree.ocr.OCRMatcher._process_file'):
+        with patch('bree.ocr.OCRMatcher.process'):
             any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
             matcher = OCRMatcher(any_image._get_numpy_image())
             matcher._parsed_text = WIKI_PYTHON_TEXT_TEXT
@@ -500,7 +500,7 @@ class TestFindingBoundingBoxes:
 
     @staticmethod
     def test_finding_two_words():
-        with patch('bree.ocr.OCRMatcher._process_file'):
+        with patch('bree.ocr.OCRMatcher.process'):
             any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
             matcher = OCRMatcher(any_image._get_numpy_image())
             matcher._parsed_text = WIKI_PYTHON_TEXT_TEXT
@@ -514,7 +514,7 @@ class TestFindingBoundingBoxes:
 
     @staticmethod
     def test_finding_complete_single_word_on_second_line():
-        with patch('bree.ocr.OCRMatcher._process_file'):
+        with patch('bree.ocr.OCRMatcher.process'):
             any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
             matcher = OCRMatcher(any_image._get_numpy_image())
             matcher._parsed_text = WIKI_PYTHON_TEXT_TEXT
@@ -526,7 +526,7 @@ class TestFindingBoundingBoxes:
 
     @staticmethod
     def test_specifying_end_before_token_found_fails_to_find_token():
-        with patch('bree.ocr.OCRMatcher._process_file'):
+        with patch('bree.ocr.OCRMatcher.process'):
             any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
             matcher = OCRMatcher(any_image._get_numpy_image())
             matcher._parsed_text = WIKI_PYTHON_TEXT_TEXT
@@ -536,7 +536,7 @@ class TestFindingBoundingBoxes:
 
     @staticmethod
     def test_specifying_end_before_token_found_fails_to_find_token_using_regex():
-        with patch('bree.ocr.OCRMatcher._process_file'):
+        with patch('bree.ocr.OCRMatcher.process'):
             any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
             matcher = OCRMatcher(any_image._get_numpy_image())
             matcher._parsed_text = WIKI_PYTHON_TEXT_TEXT
@@ -546,7 +546,7 @@ class TestFindingBoundingBoxes:
 
     @staticmethod
     def test_finding_two_words_on_separate_lines():
-        with patch('bree.ocr.OCRMatcher._process_file'):
+        with patch('bree.ocr.OCRMatcher.process'):
             any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
             matcher = OCRMatcher(any_image._get_numpy_image())
             matcher._parsed_text = WIKI_PYTHON_TEXT_TEXT
@@ -560,7 +560,7 @@ class TestFindingBoundingBoxes:
 
     @staticmethod
     def test_finding_needle_with_regex_pattern():
-        with patch('bree.ocr.OCRMatcher._process_file'):
+        with patch('bree.ocr.OCRMatcher.process'):
             any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
             matcher = OCRMatcher(any_image._get_numpy_image())
             matcher._parsed_text = WIKI_PYTHON_TEXT_TEXT
@@ -574,7 +574,7 @@ class TestFindingBoundingBoxes:
 
     @staticmethod
     def test_failing_to_find_needle():
-        with patch('bree.ocr.OCRMatcher._process_file'):
+        with patch('bree.ocr.OCRMatcher.process'):
             any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
             matcher = OCRMatcher(any_image._get_numpy_image())
             matcher._parsed_text = WIKI_PYTHON_TEXT_TEXT
@@ -584,7 +584,7 @@ class TestFindingBoundingBoxes:
 
     @staticmethod
     def test_failing_to_find_needle_using_regex():
-        with patch('bree.ocr.OCRMatcher._process_file'):
+        with patch('bree.ocr.OCRMatcher.process'):
             any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
             matcher = OCRMatcher(any_image._get_numpy_image())
             matcher._parsed_text = WIKI_PYTHON_TEXT_TEXT
@@ -594,7 +594,7 @@ class TestFindingBoundingBoxes:
 
     @staticmethod
     def test_specifying_start_after_token_found_fails_to_find_token():
-        with patch('bree.ocr.OCRMatcher._process_file'):
+        with patch('bree.ocr.OCRMatcher.process'):
             any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
             matcher = OCRMatcher(any_image._get_numpy_image())
             matcher._parsed_text = WIKI_PYTHON_TEXT_TEXT
@@ -604,7 +604,7 @@ class TestFindingBoundingBoxes:
 
     @staticmethod
     def test_specifying_start_after_token_found_fails_to_find_token_using_regex():
-        with patch('bree.ocr.OCRMatcher._process_file'):
+        with patch('bree.ocr.OCRMatcher.process'):
             any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
             matcher = OCRMatcher(any_image._get_numpy_image())
             matcher._parsed_text = WIKI_PYTHON_TEXT_TEXT
@@ -614,7 +614,7 @@ class TestFindingBoundingBoxes:
 
     @staticmethod
     def test_finding_all_when_there_are_no_results_returns_empty_list():
-        with patch('bree.ocr.OCRMatcher._process_file'):
+        with patch('bree.ocr.OCRMatcher.process'):
             any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
             matcher = OCRMatcher(any_image._get_numpy_image())
             matcher.find_bounding_boxes = MagicMock(return_value=(-1, -1, []))
@@ -623,7 +623,7 @@ class TestFindingBoundingBoxes:
 
     @staticmethod
     def test_finding_all_when_there_is_one_result_returns_list_with_one_result():
-        with patch('bree.ocr.OCRMatcher._process_file'):
+        with patch('bree.ocr.OCRMatcher.process'):
             any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
             matcher = OCRMatcher(any_image._get_numpy_image())
             matcher.find_bounding_boxes = MagicMock(side_effect=[
@@ -637,7 +637,7 @@ class TestFindingBoundingBoxes:
 
     @staticmethod
     def test_finding_all_when_there_is_one_result_but_multiple_boxes_returns_list_with_one_result():
-        with patch('bree.ocr.OCRMatcher._process_file'):
+        with patch('bree.ocr.OCRMatcher.process'):
             any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
             matcher = OCRMatcher(any_image._get_numpy_image())
             matcher.find_bounding_boxes = MagicMock(side_effect=[
@@ -659,7 +659,7 @@ class TestFindingBoundingBoxes:
 
     @staticmethod
     def test_finding_all_when_there_are_many_results():
-        with patch('bree.ocr.OCRMatcher._process_file'):
+        with patch('bree.ocr.OCRMatcher.process'):
             any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
             matcher = OCRMatcher(any_image._get_numpy_image())
             matcher.find_bounding_boxes = MagicMock(side_effect=[
@@ -677,7 +677,7 @@ class TestFindingBoundingBoxes:
 class TestFind:
     @staticmethod
     def test_failing_to_find_needle():
-        with patch('bree.ocr.OCRMatcher._process_file'):
+        with patch('bree.ocr.OCRMatcher.process'):
             any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
             matcher = OCRMatcher(any_image._get_numpy_image())
             matcher._parsed_text = WIKI_PYTHON_TEXT_TEXT
@@ -689,7 +689,7 @@ class TestFind:
 
     @staticmethod
     def test_finding_one_bounding_box_where_indices_match_text_result_indices():
-        with patch('bree.ocr.OCRMatcher._process_file'):
+        with patch('bree.ocr.OCRMatcher.process'):
             any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
             matcher = OCRMatcher(any_image._get_numpy_image())
             matcher.find_bounding_boxes = MagicMock(return_value=(1, 8, [
@@ -700,7 +700,7 @@ class TestFind:
 
     @staticmethod
     def test_finding_one_bounding_box_where_indices_dont_match_text_result_indices():
-        with patch('bree.ocr.OCRMatcher._process_file'):
+        with patch('bree.ocr.OCRMatcher.process'):
             any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
             matcher = OCRMatcher(any_image._get_numpy_image())
             matcher.find_bounding_boxes = MagicMock(return_value=(3, 7, [
@@ -711,7 +711,7 @@ class TestFind:
 
     @staticmethod
     def test_finding_bounding_boxes_on_same_line():
-        with patch('bree.ocr.OCRMatcher._process_file'):
+        with patch('bree.ocr.OCRMatcher.process'):
             any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
             matcher = OCRMatcher(any_image._get_numpy_image())
             matcher.find_bounding_boxes = MagicMock(return_value=(39, 53, [
@@ -724,7 +724,7 @@ class TestFind:
 
     @staticmethod
     def test_finding_bounding_boxes_across_lines():
-        with patch('bree.ocr.OCRMatcher._process_file'):
+        with patch('bree.ocr.OCRMatcher.process'):
             any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
             matcher = OCRMatcher(any_image._get_numpy_image())
             matcher.find_bounding_boxes = MagicMock(return_value=(59, 83, [
@@ -737,7 +737,7 @@ class TestFind:
 
     @staticmethod
     def test_finding_all_when_there_are_no_results_returns_empty_list():
-        with patch('bree.ocr.OCRMatcher._process_file'):
+        with patch('bree.ocr.OCRMatcher.process'):
             any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
             matcher = OCRMatcher(any_image._get_numpy_image())
             matcher.find = MagicMock(return_value=None)
@@ -746,7 +746,7 @@ class TestFind:
 
     @staticmethod
     def test_finding_all_when_there_is_one_result_returns_list_with_one_result():
-        with patch('bree.ocr.OCRMatcher._process_file'):
+        with patch('bree.ocr.OCRMatcher.process'):
             any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
             matcher = OCRMatcher(any_image._get_numpy_image())
             matcher.find = MagicMock(side_effect=[
@@ -760,7 +760,7 @@ class TestFind:
 
     @staticmethod
     def test_finding_all_when_there_are_many_results():
-        with patch('bree.ocr.OCRMatcher._process_file'):
+        with patch('bree.ocr.OCRMatcher.process'):
             any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
             matcher = OCRMatcher(any_image._get_numpy_image())
             matcher.find = MagicMock(side_effect=[
