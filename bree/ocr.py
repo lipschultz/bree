@@ -124,7 +124,7 @@ class OCRMatcher:
         the bounding box will be for "the", not just the "he" in it).  This may change in the future to be for just the
         matched part of a token.
         """
-        no_match_found = -1, -1, []
+        no_match_found = -1, -1, []  # type: Tuple[int, int, List]
 
         start = start or 0
         end = end or len(self._parsed_text)

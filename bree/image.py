@@ -50,7 +50,9 @@ class BaseImage:
     def _get_numpy_image(self) -> np.ndarray:
         raise NotImplementedError
 
-    def __eq__(self, other: 'BaseImage') -> bool:
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, BaseImage):
+            return NotImplemented
         return np.array_equal(self._get_numpy_image(), other._get_numpy_image())
 
     @property
@@ -415,7 +417,10 @@ class RegionInImage(BaseImage):
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}(parent_image={self.parent_image!r}, region={self.region!r})'
 
-    def __eq__(self, other: 'RegionInImage') -> bool:
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, RegionInImage):
+            return NotImplemented
+
         return (
             isinstance(other, RegionInImage) and
             self._parent_image == other._parent_image and
@@ -570,7 +575,10 @@ class MatchedRegionInImage(RegionInImage):
         attribute_str = ', '.join(f'{attr}={getattr(self, attr)!r}' for attr in attributes)
         return f'{self.__class__.__name__}({attribute_str})'
 
-    def __eq__(self, other: 'MatchedRegionInImage') -> bool:
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, MatchedRegionInImage):
+            return NotImplemented
+
         return (
             isinstance(other, MatchedRegionInImage) and
             super().__eq__(other) and
