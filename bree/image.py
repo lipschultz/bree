@@ -1,4 +1,3 @@
-import itertools
 from pathlib import Path
 from typing import Union, Iterable, Tuple, Optional, List, Collection
 
@@ -131,20 +130,20 @@ class BaseImage:
             needle = [needle]
 
         numpy_image = self._get_numpy_image()
-        all_found = itertools.chain.from_iterable(
-            _find_all_within(
+        all_found = []  # type: List[MatchedRegionInImage]
+        for n in needle:
+            results = _find_all_within(
                 n._get_numpy_image(),
                 numpy_image,
                 confidence,
                 match_method=match_method
             )
-            for n in needle
-        )
+            all_found.extend(
+                MatchedRegionInImage.from_region_in_image(self.get_child_region(region), n, score)
+                for region, score in results
+            )
 
-        return (
-            MatchedRegionInImage.from_region_in_image(self.get_child_region(region), score)
-            for region, score in all_found
-        )
+        return all_found
 
     def find_text_all(
             self,
@@ -162,16 +161,16 @@ class BaseImage:
 
         matcher = self._get_ocr_matcher(language, line_break, paragraph_break)
 
-        all_found = itertools.chain.from_iterable(
-            matcher.find_all(n, regex=regex, regex_flags=regex_flags)
-            for n in needle
-        )
+        all_found = []  # type: List[MatchedRegionInImage]
+        for n in needle:
+            results = matcher.find_all(n, regex=regex, regex_flags=regex_flags)
+            all_found.extend(
+                MatchedRegionInImage.from_region_in_image(self.get_child_region(result.region), n, result.confidence)
+                for result in results
+                if result.confidence >= confidence
+            )
 
-        return (
-            MatchedRegionInImage.from_region_in_image(self.get_child_region(result.region), result.confidence)
-            for result in all_found
-            if result.confidence >= confidence
-        )
+        return all_found
 
     def find_all(
             self,
@@ -558,13 +557,23 @@ class RegionInImage(BaseImage):
 
 
 class MatchedRegionInImage(RegionInImage):
-    def __init__(self, parent_image: BaseImage, region: Region, confidence: float):
+    def __init__(self, parent_image: BaseImage, region: Region, needle: Union[BaseImage, str], confidence: float):
         super().__init__(parent_image, region)
+        self._needle = needle
         self._confidence = confidence
 
     @classmethod
-    def from_region_in_image(cls, region_in_image: RegionInImage, confidence: float) -> 'MatchedRegionInImage':
-        return cls(region_in_image.parent_image, region_in_image.region, confidence)
+    def from_region_in_image(
+            cls,
+            region_in_image: RegionInImage,
+            needle: Union[BaseImage, str],
+            confidence: float
+    ) -> 'MatchedRegionInImage':
+        return cls(region_in_image.parent_image, region_in_image.region, needle, confidence)
+
+    @property
+    def needle(self) -> Union[BaseImage, str]:
+        return self._needle
 
     @property
     def confidence(self) -> float:
@@ -582,6 +591,7 @@ class MatchedRegionInImage(RegionInImage):
         return (
             isinstance(other, MatchedRegionInImage) and
             super().__eq__(other) and
+            self._needle == other._needle and
             self._confidence == other._confidence
         )
 

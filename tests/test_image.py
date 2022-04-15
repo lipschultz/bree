@@ -145,8 +145,8 @@ class TestImage:
         ))
 
         expected = [
-            MatchedRegionInImage(any_image, Region(155, 84, 24, 12), 90),
-            MatchedRegionInImage(any_image, Region(50, 106, 79, 12), 96.697075),
+            MatchedRegionInImage(any_image, Region(155, 84, 24, 12), 'text', 90),
+            MatchedRegionInImage(any_image, Region(50, 106, 79, 12), 'text', 96.697075),
         ]
 
         any_image._get_ocr_matcher.assert_called_once_with('eng', '\n', '\n\n')
@@ -190,8 +190,8 @@ class TestImage:
     def test_finding_best_match_text():
         any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
         any_image.find_text_all = MagicMock(return_value=[
-            MatchedRegionInImage(any_image, Region(155, 84, 24, 12), 90),
-            MatchedRegionInImage(any_image, Region(50, 106, 79, 12), 96.697075),
+            MatchedRegionInImage(any_image, Region(155, 84, 24, 12), 'text', 90),
+            MatchedRegionInImage(any_image, Region(50, 106, 79, 12), 'text', 96.697075),
         ])
 
         found = any_image.find_text(
@@ -204,7 +204,7 @@ class TestImage:
             paragraph_break='\n\n',
         )
 
-        assert found == MatchedRegionInImage(any_image, Region(50, 106, 79, 12), 96.697075)
+        assert found == MatchedRegionInImage(any_image, Region(50, 106, 79, 12), 'text', 96.697075)
         any_image.find_text_all.assert_called_once_with(
             'text',
             0.89,
@@ -264,12 +264,14 @@ class TestImage:
     def test_wait_until_image_appears_returns_found_region_when_needle_found_in_image():
         any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
         needle = Image(RESOURCES_DIR / 'the.png')
-        any_image.find_image_all = MagicMock(return_value=[MatchedRegionInImage(any_image, Region(0, 0, 1, 1), 1.0)])
+        any_image.find_image_all = MagicMock(return_value=[
+            MatchedRegionInImage(any_image, Region(0, 0, 1, 1), needle, 1.0)
+        ])
 
         with mock.patch('bree.image.pyautogui.sleep', return_value=None, new_callable=MagicMock) as sleep_patch:
             found = any_image.wait_until_image_appears(needle, 0.8, 10, match_method='ANY-METHOD', scans_per_second=20)
 
-            assert found == [MatchedRegionInImage(any_image, Region(0, 0, 1, 1), 1.0)]
+            assert found == [MatchedRegionInImage(any_image, Region(0, 0, 1, 1), needle, 1.0)]
             any_image.find_image_all.assert_has_calls([
                 call(needle, 0.8, match_method='ANY-METHOD')
             ])
@@ -283,13 +285,13 @@ class TestImage:
         any_image.find_image_all = MagicMock(side_effect=[
             [],
             [],
-            [MatchedRegionInImage(any_image, Region(0, 0, 1, 1), 1.0)],
+            [MatchedRegionInImage(any_image, Region(0, 0, 1, 1), needle, 1.0)],
         ])
 
         with mock.patch('bree.image.pyautogui.sleep', return_value=None, new_callable=MagicMock) as sleep_patch:
             found = any_image.wait_until_image_appears(needle, 0.8, 10, match_method='ANY-METHOD', scans_per_second=20)
 
-            assert found == [MatchedRegionInImage(any_image, Region(0, 0, 1, 1), 1.0)]
+            assert found == [MatchedRegionInImage(any_image, Region(0, 0, 1, 1), needle, 1.0)]
             any_image.find_image_all.assert_has_calls([
                 call(needle, 0.8, match_method='ANY-METHOD')
             ] * 3)
@@ -300,12 +302,14 @@ class TestImage:
     def test_wait_until_image_appears_scans_once_when_timeout_is_zero():
         any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
         needle = Image(RESOURCES_DIR / 'the.png')
-        any_image.find_image_all = MagicMock(return_value=[MatchedRegionInImage(any_image, Region(0, 0, 1, 1), 1.0)])
+        any_image.find_image_all = MagicMock(return_value=[
+            MatchedRegionInImage(any_image, Region(0, 0, 1, 1), needle, 1.0)
+        ])
 
         with mock.patch('bree.image.pyautogui.sleep', return_value=None, new_callable=MagicMock) as sleep_patch:
             found = any_image.wait_until_image_appears(needle, 0.8, 0, match_method='ANY-METHOD', scans_per_second=20)
 
-            assert found == [MatchedRegionInImage(any_image, Region(0, 0, 1, 1), 1.0)]
+            assert found == [MatchedRegionInImage(any_image, Region(0, 0, 1, 1), needle, 1.0)]
             any_image.find_image_all.assert_has_calls([
                 call(needle, 0.8, match_method='ANY-METHOD')
             ])
@@ -316,12 +320,14 @@ class TestImage:
     def test_wait_until_image_appears_scans_once_when_scans_per_second_is_zero():
         any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
         needle = Image(RESOURCES_DIR / 'the.png')
-        any_image.find_image_all = MagicMock(return_value=[MatchedRegionInImage(any_image, Region(0, 0, 1, 1), 1.0)])
+        any_image.find_image_all = MagicMock(return_value=[
+            MatchedRegionInImage(any_image, Region(0, 0, 1, 1), needle, 1.0)
+        ])
 
         with mock.patch('bree.image.pyautogui.sleep', return_value=None, new_callable=MagicMock) as sleep_patch:
             found = any_image.wait_until_image_appears(needle, 0.8, 10, match_method='ANY-METHOD', scans_per_second=0)
 
-            assert found == [MatchedRegionInImage(any_image, Region(0, 0, 1, 1), 1.0)]
+            assert found == [MatchedRegionInImage(any_image, Region(0, 0, 1, 1), needle, 1.0)]
             any_image.find_image_all.assert_has_calls([
                 call(needle, 0.8, match_method='ANY-METHOD')
             ])
@@ -354,7 +360,9 @@ class TestImage:
     def test_wait_until_image_vanishes_returns_false_when_needle_found_in_image():
         any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
         needle = Image(RESOURCES_DIR / 'the.png')
-        any_image.find_image_all = MagicMock(return_value=[MatchedRegionInImage(any_image, Region(0, 0, 1, 1), 1.0)])
+        any_image.find_image_all = MagicMock(return_value=[
+            MatchedRegionInImage(any_image, Region(0, 0, 1, 1), needle, 1.0)
+        ])
 
         with mock.patch('bree.image.pyautogui.sleep', return_value=None, new_callable=MagicMock) as sleep_patch:
             vanished = any_image.wait_until_image_vanishes(
@@ -380,8 +388,8 @@ class TestImage:
         any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
         needle = Image(RESOURCES_DIR / 'the.png')
         any_image.find_image_all = MagicMock(side_effect=[
-            [MatchedRegionInImage(any_image, Region(0, 0, 1, 1), 1.0)],
-            [MatchedRegionInImage(any_image, Region(0, 0, 1, 1), 1.0)],
+            [MatchedRegionInImage(any_image, Region(0, 0, 1, 1), needle, 1.0)],
+            [MatchedRegionInImage(any_image, Region(0, 0, 1, 1), needle, 1.0)],
             [],
         ])
 
@@ -464,7 +472,7 @@ class TestImage:
         any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
         needle = Image(RESOURCES_DIR / 'the.png')
         any_image.wait_until_image_appears = MagicMock(
-            return_value=[MatchedRegionInImage(any_image, Region(0, 0, 1, 1), 1.0)]
+            return_value=[MatchedRegionInImage(any_image, Region(0, 0, 1, 1), needle, 1.0)]
         )
 
         found = any_image.contains_image(needle, 0.8, 10, scans_per_second=99)
