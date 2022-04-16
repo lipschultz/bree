@@ -8,7 +8,7 @@ import pyautogui
 from PIL import Image as PILImage
 from matplotlib.patches import Rectangle
 
-from bree.location import Region
+from bree.location import Region, Location
 from bree.ocr import OCRMatcher
 
 FileReferenceType = Union[str, Path]
@@ -554,6 +554,62 @@ class RegionInImage(BaseImage):
             self._parent_image if not absolute else self._get_root_image(),
             region
         )
+
+    def get_left(self, absolute: bool = True) -> int:
+        region = self.absolute_region if absolute else self.region
+        return region.left
+
+    @property
+    def left(self) -> int:
+        return self.get_left()
+
+    def get_top(self, absolute: bool = True) -> int:
+        region = self.absolute_region if absolute else self.region
+        return region.top
+
+    @property
+    def top(self) -> int:
+        return self.get_top()
+
+    def get_right(self, absolute: bool = True) -> int:
+        region = self.absolute_region if absolute else self.region
+        return region.right
+
+    @property
+    def right(self) -> int:
+        return self.get_right()
+
+    def get_bottom(self, absolute: bool = True) -> int:
+        region = self.absolute_region if absolute else self.region
+        return region.bottom
+
+    @property
+    def bottom(self) -> int:
+        return self.get_bottom()
+
+    def get_min_point(self, absolute: bool = True) -> Location:
+        return Location(self.get_left(absolute), self.get_top(absolute))
+
+    @property
+    def min_point(self) -> Location:
+        return self.get_min_point()
+
+    def get_max_point(self, absolute: bool = True) -> Location:
+        return Location(self.get_right(absolute), self.get_bottom(absolute))
+
+    @property
+    def max_point(self) -> Location:
+        return self.get_max_point()
+
+    def get_center(self, absolute: bool = True) -> Location:
+        return Location(
+            (self.get_right(absolute) + self.get_left(absolute)) // 2,
+            (self.get_bottom(absolute) + self.get_top(absolute)) // 2
+        )
+
+    @property
+    def center(self) -> Location:
+        return self.get_center()
 
 
 class MatchedRegionInImage(RegionInImage):
