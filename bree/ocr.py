@@ -45,7 +45,7 @@ class OCRMatcher:
                 index_mapping.append(OCRMatch(
                     len(final_string),
                     len(final_string) + len(paragraph_break),
-                    Region.from_points(
+                    Region.from_coordinates(
                         previous_region.right,
                         previous_region.top,
                         paragraph.iloc[0]['left'],
@@ -61,7 +61,7 @@ class OCRMatcher:
                     index_mapping.append(OCRMatch(
                         len(final_string),
                         len(final_string) + len(line_break),
-                        Region.from_points(
+                        Region.from_coordinates(
                             previous_region.right,
                             previous_region.top,
                             line.iloc[0]['left'],
@@ -82,7 +82,7 @@ class OCRMatcher:
                         index_mapping.append(OCRMatch(
                             len(final_string),
                             len(final_string) + 1,
-                            Region.from_points(
+                            Region.from_coordinates(
                                 previous_region.right,
                                 previous_region.top,
                                 row['left'],
@@ -193,7 +193,7 @@ class OCRMatcher:
             return OCRMatch(
                 index_start,
                 index_end,
-                Region.from_points(
+                Region.from_coordinates(
                     min(t.region.left for t in bounding_boxes),
                     min(t.region.top for t in bounding_boxes),
                     max(t.region.right for t in bounding_boxes),

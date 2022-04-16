@@ -8,7 +8,7 @@ import pyautogui
 from PIL import Image as PILImage
 from matplotlib.patches import Rectangle
 
-from bree.location import Region, Location
+from bree.location import Region, Point
 from bree.ocr import OCRMatcher
 
 FileReferenceType = Union[str, Path]
@@ -587,28 +587,28 @@ class RegionInImage(BaseImage):
     def bottom(self) -> int:
         return self.get_bottom()
 
-    def get_min_point(self, absolute: bool = True) -> Location:
-        return Location(self.get_left(absolute), self.get_top(absolute))
+    def get_min_point(self, absolute: bool = True) -> Point:
+        return Point(self.get_left(absolute), self.get_top(absolute))
 
     @property
-    def min_point(self) -> Location:
+    def min_point(self) -> Point:
         return self.get_min_point()
 
-    def get_max_point(self, absolute: bool = True) -> Location:
-        return Location(self.get_right(absolute), self.get_bottom(absolute))
+    def get_max_point(self, absolute: bool = True) -> Point:
+        return Point(self.get_right(absolute), self.get_bottom(absolute))
 
     @property
-    def max_point(self) -> Location:
+    def max_point(self) -> Point:
         return self.get_max_point()
 
-    def get_center(self, absolute: bool = True) -> Location:
-        return Location(
+    def get_center(self, absolute: bool = True) -> Point:
+        return Point(
             (self.get_right(absolute) + self.get_left(absolute)) // 2,
             (self.get_bottom(absolute) + self.get_top(absolute)) // 2
         )
 
     @property
-    def center(self) -> Location:
+    def center(self) -> Point:
         return self.get_center()
 
 
