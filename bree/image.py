@@ -611,6 +611,17 @@ class RegionInImage(BaseImage):
     def center(self) -> Point:
         return self.get_center()
 
+    def move_mouse_to(self, speed: float = 913):
+        """
+
+        :param speed: pixels per second
+        :return:
+        """
+        current = Point.from_tuple(pyautogui.position())
+        destination = self.center
+        duration = current.distance_to(destination) / speed
+        pyautogui.moveTo(destination.x, destination.y, duration)
+
 
 class MatchedRegionInImage(RegionInImage):
     def __init__(self, parent_image: BaseImage, region: Region, needle: Union[BaseImage, str], confidence: float):
