@@ -50,25 +50,40 @@ class BaseImage:
         raise NotImplementedError
 
     def __eq__(self, other: object) -> bool:
+        """
+        Determines whether the two images are equal by comparing their numpy representations.
+        """
         if not isinstance(other, BaseImage):
             return NotImplemented
         return np.array_equal(self._get_numpy_image(), other._get_numpy_image())
 
     @property
     def width(self) -> int:
+        """
+        Width of the image.
+        """
         return self._get_numpy_image().shape[1]
 
     @property
     def height(self) -> int:
+        """
+        Height of the image.
+        """
         return self._get_numpy_image().shape[0]
 
     @property
     def region(self) -> Region:
+        """
+        A region that contains the entire image.
+        """
         return Region(0, 0, self.width, self.height)
 
     def show(self, *, bounding_boxes: Iterable[Region] = ()) -> None:
         """
         Open a window to show the image using matplotlib.
+
+        :param bounding_boxes: An iterable of Region objects to show in the displayed image.  The bounding boxes will
+            be blue.
         """
         plt.imshow(self._get_numpy_image())
 
@@ -86,6 +101,12 @@ class BaseImage:
         plt.show()
 
     def get_child_region(self, region: Region) -> 'RegionInImage':
+        """
+        Get a sub-region of the current image.
+
+        :param region: Region within the current image to get.
+        :return: A sub-image that is bounded by the region provided.
+        """
         if region.left < 0:
             raise OutOfBoundsError(f'region.x={region.left}.  Value must be at least zero.')
         if region.top < 0:
@@ -116,6 +137,16 @@ class BaseImage:
         return matcher
 
     def get_text(self, *, language: Optional[str] = None, line_break: str = '\n', paragraph_break: str = '\n\n') -> str:
+        """
+        Retrieve text from the image.
+
+        To retrieve text from just part of the image, use ``get_child_region`` first to focus on just that sub-region.
+
+        :param language: A language the PyTesseract recognizes.  If `None` specified (default), then defaults to "eng".
+        :param line_break: The string to use when concatenating two OCR'ed lines.
+        :param paragraph_break:  The string to use when concatenating two OCR'ed paragraphs.
+        :return: A string representation of the text found in the image.
+        """
         matcher = self._get_ocr_matcher(language, line_break, paragraph_break)
         return matcher.text
 
@@ -125,7 +156,17 @@ class BaseImage:
             confidence: float = 0.99,
             *,
             match_method=cv2.TM_SQDIFF_NORMED
-    ) -> Iterable['MatchedRegionInImage']:
+    ) -> List['MatchedRegionInImage']:
+        """
+        Find all locations of ``needle`` in the image.
+
+        :param needle: Image or collection of images to find.
+        :param confidence: Sets the confidence threshold.  If the found image is at least this similar, then it is
+            considered a match.  Defaults to 0.99 (99%).  Setting the threshold to 1 (i.e. 100%) may result in false
+            negatives (i.e. exact matches not being found).
+        :param match_method: What technique should openCV's image matching method use?
+        :return: Regions containing the found image(s). The regions are not in sorted order.
+        """
         if isinstance(needle, BaseImage):
             needle = [needle]
 
@@ -155,7 +196,23 @@ class BaseImage:
             language: Optional[str] = None,
             line_break: str = '\n',
             paragraph_break: str = '\n\n',
-    ) -> Iterable['MatchedRegionInImage']:
+    ) -> List['MatchedRegionInImage']:
+        """
+        Find all locations of ``needle`` in the image.
+
+        :param needle: Text or collection of text to find.
+        :param confidence: Sets the confidence threshold for the OCR.  If the OCR is at least that confident in the
+            text and the text matches the needle, then it is considered a match.  Defaults to 0.9 (90%).  Setting the
+            threshold too much higher could result in false negatives (i.e. exact matches not being found) due to
+            ORC uncertainty.
+        :param regex: If true, ``needle`` is actually a regular expression (or collection of regular expressions) to
+            search for.  If false, then ``needle`` is exact string matching.
+        :param regex_flags: Flags to use for regular expression matching.  If ``regex`` is false, then this is ignored.
+        :param language: A language the PyTesseract recognizes.  If `None` specified (default), then defaults to "eng".
+        :param line_break: The string to use when concatenating two OCR'ed lines.
+        :param paragraph_break:  The string to use when concatenating two OCR'ed paragraphs.
+        :return: Regions containing the found text.
+        """
         if isinstance(needle, str):
             needle = [needle]
 
@@ -177,7 +234,18 @@ class BaseImage:
             needle: Union[str, 'BaseImage'],
             confidence: Optional[float] = None,
             **kwargs
-    ) -> Iterable['MatchedRegionInImage']:
+    ) -> List['MatchedRegionInImage']:
+        """
+        Find all locations of ``needle`` in the image.
+
+        This is a convenience wrapper around ``find_image_all`` and ``find_text_all``.  Based on the type for
+        ``needle``, the appropriate method will be called.
+
+        :param needle: Image, text, or regular expression to search for.
+        :param confidence: Confidence threshold to use for identifying matches.
+        :param kwargs: Additional arguments to pass along to the appropriate method.
+        :return: Regions containing the matches.
+        """
         if isinstance(needle, str):
             return self.find_text_all(
                 needle,
@@ -199,6 +267,19 @@ class BaseImage:
             *args,
             **kwargs
     ) -> Optional['MatchedRegionInImage']:
+        """
+        Find the best-matching region in the image.
+
+        This is a convenience wrapper around ``find_image_all`` that takes the result and returns the highest-confidence
+        result.
+
+        :param needle: Image or collection of images to find.
+        :param args: Additional positional arguments to pass to ``find_image_all``.
+        :param kwargs: Additional keyword arguments to pass to ``find_image_all``.
+        :return: The region with the best match to ``needle``.  Ties will be decided arbitrarily.  If no matches are
+            found, ``None`` is returned.  If ``needle`` is a collection, then the best overall match will be returned.
+            To get the best match for each needle, call ``find_image`` on each image individually.
+        """
         result = self.find_image_all(needle, *args, **kwargs)
         result = sorted(result, key=lambda res: res.confidence, reverse=True)
         if result:
@@ -211,6 +292,19 @@ class BaseImage:
             *args,
             **kwargs
     ) -> Optional['MatchedRegionInImage']:
+        """
+        Find the best-matching region in the image.
+
+        This is a convenience wrapper around ``find_text_all`` that takes the result and returns the highest-confidence
+        result.
+
+        :param needle: Text/regex or collection of text/regex to find.
+        :param args: Additional positional arguments to pass to ``find_text_all``.
+        :param kwargs: Additional keyword arguments to pass to ``find_text_all``.
+        :return: The region with the best match to ``needle``.  Ties will be decided arbitrarily.  If no matches are
+            found, ``None`` is returned.  If ``needle`` is a collection, then the best overall match will be returned.
+            To get the best match for each needle, call ``find_text`` on each image individually.
+        """
         result = self.find_text_all(needle, *args, **kwargs)
         result = sorted(result, key=lambda res: res.confidence, reverse=True)
         if result:
@@ -223,6 +317,18 @@ class BaseImage:
             *args,
             **kwargs
     ) -> Optional['MatchedRegionInImage']:
+        """
+        Find the best-matching region in the image.
+
+        This is a convenience wrapper around ``find_image`` and ``find_text``.  Based on the type for
+        ``needle``, the appropriate method will be called.
+
+        :param needle: Image, text, or regular expression to search for.
+        :param args: Additional positional arguments to pass to the appropriate method.
+        :param kwargs: Additional keyword arguments to pass to the appropriate method.
+        :return: The region with the best match to ``needle``.  Ties will be decided arbitrarily.  If no matches are
+            found, ``None`` is returned.
+        """
         if isinstance(needle, str):
             return self.find_text(needle, *args, **kwargs)
         elif isinstance(needle, BaseImage):
@@ -260,6 +366,20 @@ class BaseImage:
             match_method=cv2.TM_SQDIFF_NORMED,
             scans_per_second: float = 3,
     ) -> List['MatchedRegionInImage']:
+        """
+        Pauses execution until the needle appears or it times out.
+
+        :param needle: Image or collection of images to wait for.  If a collection, will wait until any image in the
+            collection appears.
+        :param confidence: Sets the confidence threshold.  If the found image is at least this similar, then it is
+            considered a match.  Defaults to 0.99 (99%).  Setting the threshold to 1 (i.e. 100%) may result in false
+            negatives (i.e. exact matches not being found).
+        :param timeout: Wait up to ``timeout`` seconds before giving up waiting.
+        :param match_method: What technique should openCV's image matching method use?
+        :param scans_per_second: How many times per second should the image be searched for the needle.
+        :return: Regions containing the found needle(s). The regions are not in sorted order.  If ``timeout`` is reached
+            and the needle did not appear, then an empty list will be returned.
+        """
         return self._wait_until_needle_appears(
             needle,
             confidence,
@@ -282,6 +402,26 @@ class BaseImage:
             paragraph_break: str = '\n\n',
             scans_per_second: float = 3,
     ) -> List['MatchedRegionInImage']:
+        """
+        Pauses execution until the needle appears or it times out.
+
+        :param needle: Text or regular expression, or collection of them to wait for.  If a collection, will wait until
+            any in the collection appears.
+        :param confidence: Sets the confidence threshold for the OCR.  If the OCR is at least that confident in the
+            text and the text matches the needle, then it is considered a match.  Defaults to 0.9 (90%).  Setting the
+            threshold too much higher could result in false negatives (i.e. exact matches not being found) due to
+            ORC uncertainty.
+        :param timeout: Wait up to ``timeout`` seconds before giving up waiting.
+        :param regex: If true, ``needle`` is actually a regular expression (or collection of regular expressions) to
+            search for.  If false, then ``needle`` is exact string matching.
+        :param regex_flags: Flags to use for regular expression matching.  If ``regex`` is false, then this is ignored.
+        :param language: A language the PyTesseract recognizes.  If `None` specified (default), then defaults to "eng".
+        :param line_break: The string to use when concatenating two OCR'ed lines.
+        :param paragraph_break:  The string to use when concatenating two OCR'ed paragraphs.
+        :param scans_per_second: How many times per second should the image be searched for the needle.
+        :return: Regions containing the found needle(s). The regions are not in sorted order.  If ``timeout`` is reached
+            and the needle did not appear, then an empty list will be returned.
+        """
         return self._wait_until_needle_appears(
             needle,
             confidence,
@@ -324,6 +464,19 @@ class BaseImage:
             match_method=cv2.TM_SQDIFF_NORMED,
             scans_per_second: float = 3,
     ) -> bool:
+        """
+        Pauses execution until the needle vanishes or it times out.
+
+        :param needle: Image or collection of images to wait for.  If a collection, will wait until any needle in the
+            collection is no longer in the image.
+        :param confidence: Sets the confidence threshold.  If the found image is at least this similar, then it is
+            considered a match.  Defaults to 0.99 (99%).  Setting the threshold to 1 (i.e. 100%) may result in false
+            negatives (i.e. exact matches not being found).
+        :param timeout: Wait up to ``timeout`` seconds before giving up waiting.
+        :param match_method: What technique should openCV's image matching method use?
+        :param scans_per_second: How many times per second should the image be searched for the needle.
+        :return: True if the needle vanished, False if the method timed out.
+        """
         return self._wait_until_needle_vanishes(
             needle,
             confidence,
@@ -346,6 +499,25 @@ class BaseImage:
             paragraph_break: str = '\n\n',
             scans_per_second: float = 3,
     ) -> bool:
+        """
+        Pauses execution until the needle vanishes or it times out.
+
+        :param needle: Text or regular expression, or collection of them to wait for.  If a collection, will wait until
+            any in the collection is no longer in the image.
+        :param confidence: Sets the confidence threshold for the OCR.  If the OCR is at least that confident in the
+            text and the text matches the needle, then it is considered a match.  Defaults to 0.9 (90%).  Setting the
+            threshold too much higher could result in false negatives (i.e. exact matches not being found) due to
+            ORC uncertainty.
+        :param timeout: Wait up to ``timeout`` seconds before giving up waiting.
+        :param regex: If true, ``needle`` is actually a regular expression (or collection of regular expressions) to
+            search for.  If false, then ``needle`` is exact string matching.
+        :param regex_flags: Flags to use for regular expression matching.  If ``regex`` is false, then this is ignored.
+        :param language: A language the PyTesseract recognizes.  If `None` specified (default), then defaults to "eng".
+        :param line_break: The string to use when concatenating two OCR'ed lines.
+        :param paragraph_break:  The string to use when concatenating two OCR'ed paragraphs.
+        :param scans_per_second: How many times per second should the image be searched for the needle.
+        :return: True if the needle vanished, False if the method timed out.
+        """
         return self._wait_until_needle_vanishes(
             needle,
             confidence,
@@ -360,6 +532,12 @@ class BaseImage:
         )
 
     def contains(self, needle: Union[str, 'BaseImage'], *args, **kwargs) -> bool:
+        """
+        Determines whether ``needle`` appears in the image.
+
+        This is a convenience wrapper around ``contains_image`` and ``contains_text``.  Based on the type for
+        ``needle``, the appropriate method will be called.
+        """
         if isinstance(needle, BaseImage):
             return self.contains_image(needle, *args, **kwargs)
         elif isinstance(needle, str):
@@ -367,12 +545,29 @@ class BaseImage:
         raise TypeError(f'Unsupported needle type: {type(needle)}')
 
     def contains_image(self, needle: Union['BaseImage', Collection['BaseImage']], *args, **kwargs) -> bool:
+        """
+        Determines whether ``needle`` appears in the image.
+
+        This is a convenience wrapper around ``wait_until_image_appears``, returning True if any needle appears, False
+        otherwise.  The method call defaults to using the default values in ``wait_until_image_appears``.
+        """
         return len(self.wait_until_image_appears(needle, *args, **kwargs)) > 0
 
     def contains_text(self, needle: Union[str, Collection[str]], *args, **kwargs) -> bool:
+        """
+        Determines whether ``needle`` appears in the image.
+
+        This is a convenience wrapper around ``wait_until_text_appears``, returning True if any needle appears, False
+        otherwise.  The method call defaults to using the default values in ``wait_until_text_appears``.
+        """
         return len(self.wait_until_text_appears(needle, *args, **kwargs)) > 0
 
     def __contains__(self, needle: Union[str, 'BaseImage']) -> bool:
+        """
+        Determines whether ``needle`` appears in the image.
+
+        This is a convenience wrapper around ``contains``, setting the timeout to 0.
+        """
         return self.contains(needle, timeout=0)
 
 
@@ -417,6 +612,9 @@ class RegionInImage(BaseImage):
         return f'{self.__class__.__name__}(parent_image={self.parent_image!r}, region={self.region!r})'
 
     def __eq__(self, other: object) -> bool:
+        """
+        Determines whether the two ``RegionInImage`` objects are equal by comparing their parent images and the regions.
+        """
         if not isinstance(other, RegionInImage):
             return NotImplemented
 
@@ -428,14 +626,33 @@ class RegionInImage(BaseImage):
 
     @property
     def parent_image(self) -> BaseImage:
+        """
+        The parent image.
+        """
         return self._parent_image
 
     @property
     def region(self) -> Region:
+        """
+        The region in the parent image.
+        """
         return self._region
 
     @property
+    def root_image(self) -> BaseImage:
+        """
+        The base image, which may be the parent image but could be a further ancestor.  Basically, the first
+        non-``RegionInImage`` ancestor.
+        """
+        if isinstance(self._parent_image, RegionInImage):
+            return self._parent_image.root_image
+        return self._parent_image
+
+    @property
     def absolute_region(self) -> Region:
+        """
+        The region in the root image, which may be the parent image but could be a further ancestor.
+        """
         if isinstance(self._parent_image, RegionInImage):
             parent_absolute_region = self._parent_image.absolute_region
             return Region(
@@ -447,11 +664,6 @@ class RegionInImage(BaseImage):
         else:
             return self.region
 
-    def _get_root_image(self) -> BaseImage:
-        if isinstance(self._parent_image, RegionInImage):
-            return self._parent_image._get_root_image()
-        return self._parent_image
-
     def _get_numpy_image(self) -> np.ndarray:
         x_min = self._region.left
         x_max = self._region.right
@@ -462,6 +674,18 @@ class RegionInImage(BaseImage):
         return self._parent_image._get_numpy_image()[y_min:y_max, x_min:x_max, :]
 
     def raw_region_left(self, size: Optional[int] = None, absolute=True) -> Region:
+        """
+        Get the region to the left of this current region.
+
+        The height of this new region will be the same as the height of the current region.  Its right-most edge is the
+        current region's left-most edge.  Its left edge is determined by the ``size`` parameter.
+
+        :param size: Number of pixels wide to make the new region.  If ``None`` (default), then the width is the maximum
+            possible given the image's size.
+        :param absolute: If True (default), the region is relative to the root image.  If False, then the region is
+            relative to the parent image.
+        :return: A region to the left of the current region.
+        """
         region = self.absolute_region if absolute else self.region
 
         if size is None:
@@ -477,14 +701,39 @@ class RegionInImage(BaseImage):
         )
 
     def region_left(self, size: Optional[int] = None, absolute=True) -> 'RegionInImage':
+        """
+        Get the region (in image) to the left of this current region.
+
+        The height of this new region will be the same as the height of the current region.  Its right-most edge is the
+        current region's left-most edge.  Its left edge is determined by the ``size`` parameter.
+
+        :param size: Number of pixels wide to make the new region.  If ``None`` (default), then the width is the maximum
+            possible given the image's size.
+        :param absolute: If True (default), the region is relative to the root image.  If False, then the region is
+            relative to the parent image.
+        :return: The region to the left of the current region. The image will be the parent image if ``absolute`` is
+            False, the root image otherwise.
+        """
         region = self.raw_region_left(size, absolute)
 
         return RegionInImage(
-            self._parent_image if not absolute else self._get_root_image(),
+            self._parent_image if not absolute else self.root_image,
             region
         )
 
     def raw_region_above(self, size: Optional[int] = None, absolute=True) -> Region:
+        """
+        Get the region above this current region.
+
+        The width of this new region will be the same as the width of the current region.  Its bottom-most edge is the
+        current region's top-most edge.  Its top edge is determined by the ``size`` parameter.
+
+        :param size: Number of pixels tall to make the new region.  If ``None`` (default), then the height is the
+            maximum possible given the image's size.
+        :param absolute: If True (default), the region is relative to the root image.  If False, then the region is
+            relative to the parent image.
+        :return: A region above the current region.
+        """
         region = self.absolute_region if absolute else self.region
 
         if size is None:
@@ -500,19 +749,44 @@ class RegionInImage(BaseImage):
         )
 
     def region_above(self, size: Optional[int] = None, absolute=True) -> 'RegionInImage':
+        """
+        Get the region (in image) above this current region.
+
+        The width of this new region will be the same as the width of the current region.  Its bottom-most edge is the
+        current region's top-most edge.  Its top edge is determined by the ``size`` parameter.
+
+        :param size: Number of pixels tall to make the new region.  If ``None`` (default), then the height is the
+            maximum possible given the image's size.
+        :param absolute: If True (default), the region is relative to the root image.  If False, then the region is
+            relative to the parent image.
+        :return: The region above the current region. The image will be the parent image if ``absolute`` is
+            False, the root image otherwise.
+        """
         region = self.raw_region_above(size, absolute)
 
         return RegionInImage(
-            self._parent_image if not absolute else self._get_root_image(),
+            self._parent_image if not absolute else self.root_image,
             region
         )
 
     def raw_region_right(self, size: Optional[int] = None, absolute=True) -> Region:
+        """
+        Get the region to the right of this current region.
+
+        The height of this new region will be the same as the height of the current region.  Its left-most edge is the
+        current region's right-most edge.  Its right edge is determined by the ``size`` parameter.
+
+        :param size: Number of pixels wide to make the new region.  If ``None`` (default), then the width is the maximum
+            possible given the image's size.
+        :param absolute: If True (default), the region is relative to the root image.  If False, then the region is
+            relative to the parent image.
+        :return: A region to the right of the current region.
+        """
         region = self.absolute_region if absolute else self.region
 
         left_edge = region.right + 1
         if absolute:
-            total_width = self._get_root_image().width
+            total_width = self.root_image.width
         else:
             total_width = self._parent_image.width
 
@@ -524,19 +798,44 @@ class RegionInImage(BaseImage):
         )
 
     def region_right(self, size: Optional[int] = None, absolute=True) -> 'RegionInImage':
+        """
+        Get the region (in image) to the right of this current region.
+
+        The height of this new region will be the same as the height of the current region.  Its left-most edge is the
+        current region's right-most edge.  Its right edge is determined by the ``size`` parameter.
+
+        :param size: Number of pixels wide to make the new region.  If ``None`` (default), then the width is the maximum
+            possible given the image's size.
+        :param absolute: If True (default), the region is relative to the root image.  If False, then the region is
+            relative to the parent image.
+        :return: The region to the right of the current region. The image will be the parent image if ``absolute`` is
+            False, the root image otherwise.
+        """
         region = self.raw_region_right(size, absolute)
 
         return RegionInImage(
-            self._parent_image if not absolute else self._get_root_image(),
+            self._parent_image if not absolute else self.root_image,
             region
         )
 
     def raw_region_below(self, size: Optional[int] = None, absolute=True) -> Region:
+        """
+        Get the region below this current region.
+
+        The width of this new region will be the same as the width of the current region.  Its top-most edge is the
+        current region's bottom-most edge.  Its bottom edge is determined by the ``size`` parameter.
+
+        :param size: Number of pixels tall to make the new region.  If ``None`` (default), then the height is the
+            maximum possible given the image's size.
+        :param absolute: If True (default), the region is relative to the root image.  If False, then the region is
+            relative to the parent image.
+        :return: A region below the current region.
+        """
         region = self.absolute_region if absolute else self.region
 
         top_edge = region.bottom + 1
         if absolute:
-            total_height = self._get_root_image().height
+            total_height = self.root_image.height
         else:
             total_height = self._parent_image.height
 
@@ -548,60 +847,119 @@ class RegionInImage(BaseImage):
         )
 
     def region_below(self, size: Optional[int] = None, absolute=True) -> 'RegionInImage':
+        """
+        Get the region (in image) below this current region.
+
+        The width of this new region will be the same as the width of the current region.  Its top-most edge is the
+        current region's bottom-most edge.  Its bottom edge is determined by the ``size`` parameter.
+
+        :param size: Number of pixels tall to make the new region.  If ``None`` (default), then the height is the
+            maximum possible given the image's size.
+        :param absolute: If True (default), the region is relative to the root image.  If False, then the region is
+            relative to the parent image.
+        :return: The region below the current region. The image will be the parent image if ``absolute`` is
+            False, the root image otherwise.
+        """
         region = self.raw_region_below(size, absolute)
 
         return RegionInImage(
-            self._parent_image if not absolute else self._get_root_image(),
+            self._parent_image if not absolute else self.root_image,
             region
         )
 
     def get_left(self, absolute: bool = True) -> int:
+        """
+        Get the left edge of the region relative to the parent image (if absolute=False) or the root image (if
+        absolute=True, default).
+        """
         region = self.absolute_region if absolute else self.region
         return region.left
 
     @property
     def left(self) -> int:
+        """
+        Get the left edge of the region relative to the root image.
+        """
         return self.get_left()
 
     def get_top(self, absolute: bool = True) -> int:
+        """
+        Get the top edge of the region relative to the parent image (if absolute=False) or the root image (if
+        absolute=True, default).
+        """
         region = self.absolute_region if absolute else self.region
         return region.top
 
     @property
     def top(self) -> int:
+        """
+        Get the top edge of the region relative to the root image.
+        """
         return self.get_top()
 
     def get_right(self, absolute: bool = True) -> int:
+        """
+        Get the right edge of the region relative to the parent image (if absolute=False) or the root image (if
+        absolute=True, default).
+        """
         region = self.absolute_region if absolute else self.region
         return region.right
 
     @property
     def right(self) -> int:
+        """
+        Get the right edge of the region relative to the root image.
+        """
         return self.get_right()
 
     def get_bottom(self, absolute: bool = True) -> int:
+        """
+        Get the bottom edge of the region relative to the parent image (if absolute=False) or the root image (if
+        absolute=True, default).
+        """
         region = self.absolute_region if absolute else self.region
         return region.bottom
 
     @property
     def bottom(self) -> int:
+        """
+        Get the bottom edge of the region relative to the root image.
+        """
         return self.get_bottom()
 
     def get_min_point(self, absolute: bool = True) -> Point:
+        """
+        Get the top left point of the region relative to the parent image (if absolute=False) or the root image (if
+        absolute=True, default).
+        """
         return Point(self.get_left(absolute), self.get_top(absolute))
 
     @property
     def min_point(self) -> Point:
+        """
+        Get the top left point of the region relative to the root image.
+        """
         return self.get_min_point()
 
     def get_max_point(self, absolute: bool = True) -> Point:
+        """
+        Get the bottom right point of the region relative to the parent image (if absolute=False) or the root image (if
+        absolute=True, default).
+        """
         return Point(self.get_right(absolute), self.get_bottom(absolute))
 
     @property
     def max_point(self) -> Point:
+        """
+        Get the bottom right point of the region relative to the root image.
+        """
         return self.get_max_point()
 
     def get_center(self, absolute: bool = True) -> Point:
+        """
+        Get the center point of the region relative to the parent image (if absolute=False) or the root image (if
+        absolute=True, default).
+        """
         return Point(
             (self.get_right(absolute) + self.get_left(absolute)) // 2,
             (self.get_bottom(absolute) + self.get_top(absolute)) // 2
@@ -609,13 +967,16 @@ class RegionInImage(BaseImage):
 
     @property
     def center(self) -> Point:
+        """
+        Get the center point of the region relative to the root image.
+        """
         return self.get_center()
 
-    def move_mouse_to(self, speed: float = 913):
+    def move_mouse_to(self, speed: float = 913) -> None:
         """
+        Move the mouse to the center of this region.
 
         :param speed: pixels per second
-        :return:
         """
         current = Point.from_tuple(pyautogui.position())
         destination = self.center
@@ -640,10 +1001,16 @@ class MatchedRegionInImage(RegionInImage):
 
     @property
     def needle(self) -> Union[BaseImage, str]:
+        """
+        Needle used to find the matched region.
+        """
         return self._needle
 
     @property
     def confidence(self) -> float:
+        """
+        Confidence that the matched region matches the needle in the range 0 (no confidence) to 1 (exact match).
+        """
         return self._confidence
 
     def __repr__(self) -> str:
@@ -652,6 +1019,10 @@ class MatchedRegionInImage(RegionInImage):
         return f'{self.__class__.__name__}({attribute_str})'
 
     def __eq__(self, other: object) -> bool:
+        """
+        Determines whether the two ``MatchedRegionInImage`` objects are equal by comparing the underlying
+        ``RegionInImage``, the needles, and the confidences.
+        """
         if not isinstance(other, MatchedRegionInImage):
             return NotImplemented
 
@@ -675,4 +1046,7 @@ class Screen(BaseImage):
         return np.asarray(self._get_pil_image())
 
     def screenshot(self) -> Image:
+        """
+        Get an image of what's currently on the screen.
+        """
         return Image(self._get_numpy_image())
