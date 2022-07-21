@@ -941,6 +941,31 @@ class RegionInImage(BaseImage):
         """
         return self.get_min_point()
 
+    get_top_left = get_min_point
+    top_left = min_point
+
+    def get_top_right(self, absolute: bool = True) -> Point:
+        """
+        Get the top right point of the region relative to the parent image (if absolute=False) or the root image (if
+        absolute=True, default).
+        """
+        return Point(self.get_right(absolute), self.get_top(absolute))
+
+    @property
+    def top_right(self) -> Point:
+        return self.get_top_right()
+
+    def get_bottom_left(self, absolute: bool = True) -> Point:
+        """
+        Get the bottom left point of the region relative to the parent image (if absolute=False) or the root image (if
+        absolute=True, default).
+        """
+        return Point(self.get_left(absolute), self.get_bottom(absolute))
+
+    @property
+    def bottom_left(self) -> Point:
+        return self.get_bottom_left()
+
     def get_max_point(self, absolute: bool = True) -> Point:
         """
         Get the bottom right point of the region relative to the parent image (if absolute=False) or the root image (if
@@ -954,6 +979,9 @@ class RegionInImage(BaseImage):
         Get the bottom right point of the region relative to the root image.
         """
         return self.get_max_point()
+
+    get_bottom_right = get_max_point
+    bottom_right = max_point
 
     def get_center(self, absolute: bool = True) -> Point:
         """
