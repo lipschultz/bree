@@ -612,7 +612,14 @@ class Image(BaseImage):
         return self.__numpy_image
 
     def __repr__(self):
-        return f'Image(image={self._original_image!r})'
+        if isinstance(self._original_image, np.ndarray):
+            str_original_image = (
+                f'array({self._original_image[0, 0, :]}...{self._original_image[-1, -1, :]}, '
+                f'shape={self._original_image.shape}, dtype={self._original_image.dtype})'
+            )
+        else:
+            str_original_image = repr(self._original_image)
+        return f'Image(image={str_original_image})'
 
 
 class RegionInImage(BaseImage):
