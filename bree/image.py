@@ -895,12 +895,16 @@ class RegionInImage(BaseImage):
         region = self.absolute_region if absolute else self.region
         return region.left
 
+    get_x = get_left
+
     @property
     def left(self) -> int:
         """
         Get the left edge of the region relative to the root image.
         """
         return self.get_left()
+
+    x = left
 
     def get_top(self, absolute: bool = True) -> int:
         """
@@ -910,12 +914,16 @@ class RegionInImage(BaseImage):
         region = self.absolute_region if absolute else self.region
         return region.top
 
+    get_y = get_top
+
     @property
     def top(self) -> int:
         """
         Get the top edge of the region relative to the root image.
         """
         return self.get_top()
+
+    y = top
 
     def get_right(self, absolute: bool = True) -> int:
         """
