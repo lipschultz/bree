@@ -46,20 +46,43 @@ class TestBaseImage:
         any_image._get_numpy_image.assert_called_once()
         assert actual == expected
 
-
-class TestImage:
     @staticmethod
     def test_height():
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image = BaseImage()
+        any_numpy_image = np.array([
+            [[1, 2, 3], [4, 5, 6], [7, 8, 9]],
+            [[255, 254, 253], [252, 251, 250], [249, 248, 247]]
+        ])
+        any_image._get_numpy_image = MagicMock(return_value=any_numpy_image)
 
-        assert any_image.height == 817
+        assert any_image.height == 2
+        any_image._get_numpy_image.assert_called_once()
 
     @staticmethod
     def test_width():
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image = BaseImage()
+        any_numpy_image = np.array([
+            [[1, 2, 3], [4, 5, 6], [7, 8, 9]],
+            [[255, 254, 253], [252, 251, 250], [249, 248, 247]]
+        ])
+        any_image._get_numpy_image = MagicMock(return_value=any_numpy_image)
 
-        assert any_image.width == 1313
+        assert any_image.width == 3
+        any_image._get_numpy_image.assert_called_once()
 
+    @staticmethod
+    def test_region():
+        any_image = BaseImage()
+        any_numpy_image = np.array([
+            [[1, 2, 3], [4, 5, 6], [7, 8, 9]],
+            [[255, 254, 253], [252, 251, 250], [249, 248, 247]]
+        ])
+        any_image._get_numpy_image = MagicMock(return_value=any_numpy_image)
+
+        assert any_image.region == Region(0, 0, 3, 2)
+
+
+class TestImage:
     @staticmethod
     def test_getting_child_image():
         any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
