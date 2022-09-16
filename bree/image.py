@@ -47,7 +47,20 @@ class BaseImage:
         self._ocr_matchers = {}
 
     def _get_numpy_image(self) -> np.ndarray:
+        """
+        When a method needs to access the image, it calls this method.
+        """
         raise NotImplementedError
+
+    def get_as_inverted_colors(self) -> 'Image':
+        numpy_image = self._get_numpy_image()
+        has_alpha = numpy_image.shape[2] == 4
+
+        inverted_colors = 255 - numpy_image[:, :, :3]
+        if has_alpha:
+            inverted_colors = np.dstack((inverted_colors, numpy_image[:, :, 3]))
+
+        return Image(inverted_colors)
 
     def __eq__(self, other: object) -> bool:
         """

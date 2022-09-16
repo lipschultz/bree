@@ -3,12 +3,48 @@ from unittest import mock
 from unittest.mock import MagicMock, call
 
 import pytest
+import numpy as np
 
-from bree.image import Image, OutOfBoundsError, MatchedRegionInImage, Screen, RegionInImage
+from bree.image import BaseImage, Image, OutOfBoundsError, MatchedRegionInImage, Screen, RegionInImage
 from bree.location import Region
 from bree.ocr import OCRMatch
 
 RESOURCES_DIR = Path(__file__).parent / 'resources'
+
+
+class TestBaseImage:
+    @staticmethod
+    def test_inverted_colors():
+        any_image = BaseImage()
+        any_numpy_image = np.array([
+            [[1, 2, 3], [4, 5, 6]],
+            [[255, 254, 253], [252, 251, 250]]
+        ])
+        any_image._get_numpy_image = MagicMock(return_value=any_numpy_image)
+
+        actual = any_image.get_as_inverted_colors()
+
+        expected = Image(255 - any_numpy_image)
+        any_image._get_numpy_image.assert_called_once()
+        assert actual == expected
+
+    @staticmethod
+    def test_inverted_colors_with_alpha_channel():
+        any_image = BaseImage()
+        any_numpy_image = np.array([
+            [[1, 2, 3, 0], [4, 5, 6, 1]],
+            [[255, 254, 253, 2], [252, 251, 250, 255]]
+        ])
+        any_image._get_numpy_image = MagicMock(return_value=any_numpy_image)
+
+        actual = any_image.get_as_inverted_colors()
+
+        expected = Image(np.array([
+            [[254, 253, 252, 0], [251, 250, 249, 1]],
+            [[0, 1, 2, 2], [3, 4, 5, 255]]
+        ]))
+        any_image._get_numpy_image.assert_called_once()
+        assert actual == expected
 
 
 class TestImage:
