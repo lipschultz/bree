@@ -1,22 +1,22 @@
 import re
 from collections import namedtuple
-from typing import Optional, List, Tuple
+from typing import List, Optional, Tuple
 
 import numpy as np
 import pytesseract
 
 from bree.location import Region
 
-OCRMatch = namedtuple('OCRMatch', ['index_start', 'index_end', 'region', 'confidence'])
+OCRMatch = namedtuple("OCRMatch", ["index_start", "index_end", "region", "confidence"])
 
 
 class OCRMatcher:
     def __init__(
-            self,
-            image_numpy_array: np.ndarray,
-            language: Optional[str] = None,
-            line_break: str = '\n',
-            paragraph_break: str = '\n\n'
+        self,
+        image_numpy_array: np.ndarray,
+        language: Optional[str] = None,
+        line_break: str = "\n",
+        paragraph_break: str = "\n\n",
     ):
         self._image = image_numpy_array
 
@@ -36,68 +36,71 @@ class OCRMatcher:
             self._df = df
         return self._df
 
-    def process(self, line_break='\n', paragraph_break='\n\n'):
-        final_string = ''
+    def process(self, line_break="\n", paragraph_break="\n\n"):
+        final_string = ""
         index_mapping = []
-        for _, paragraph in self._get_raw_ocr().groupby(['page_num', 'block_num', 'par_num']):
+        for _, paragraph in self._get_raw_ocr().groupby(["page_num", "block_num", "par_num"]):
             if len(final_string) > 0:
                 previous_region = index_mapping[-1].region
-                index_mapping.append(OCRMatch(
-                    len(final_string),
-                    len(final_string) + len(paragraph_break),
-                    Region.from_coordinates(
-                        previous_region.right,
-                        previous_region.top,
-                        paragraph.iloc[0]['left'],
-                        previous_region.bottom),
-                    None
-                ))
-                final_string += paragraph_break
-
-            new_paragraph = True
-            for _, line in paragraph.groupby('line_num'):
-                if len(final_string) > 0 and not new_paragraph:
-                    previous_region = index_mapping[-1].region
-                    index_mapping.append(OCRMatch(
+                index_mapping.append(
+                    OCRMatch(
                         len(final_string),
-                        len(final_string) + len(line_break),
+                        len(final_string) + len(paragraph_break),
                         Region.from_coordinates(
                             previous_region.right,
                             previous_region.top,
-                            line.iloc[0]['left'],
-                            previous_region.bottom
+                            paragraph.iloc[0]["left"],
+                            previous_region.bottom,
                         ),
-                        None
-                    ))
+                        None,
+                    )
+                )
+                final_string += paragraph_break
+
+            new_paragraph = True
+            for _, line in paragraph.groupby("line_num"):
+                if len(final_string) > 0 and not new_paragraph:
+                    previous_region = index_mapping[-1].region
+                    index_mapping.append(
+                        OCRMatch(
+                            len(final_string),
+                            len(final_string) + len(line_break),
+                            Region.from_coordinates(
+                                previous_region.right, previous_region.top, line.iloc[0]["left"], previous_region.bottom
+                            ),
+                            None,
+                        )
+                    )
                     final_string += line_break
 
                 new_paragraph = False
 
                 new_line = True
                 for _, row in line.iterrows():
-                    if row['text'] == '':
+                    if row["text"] == "":
                         continue
                     if len(final_string) > 0 and not new_line:
                         previous_region = index_mapping[-1].region
-                        index_mapping.append(OCRMatch(
+                        index_mapping.append(
+                            OCRMatch(
+                                len(final_string),
+                                len(final_string) + 1,
+                                Region.from_coordinates(
+                                    previous_region.right, previous_region.top, row["left"], previous_region.bottom
+                                ),
+                                None,
+                            )
+                        )
+                        final_string += " "
+                    index_mapping.append(
+                        OCRMatch(
                             len(final_string),
-                            len(final_string) + 1,
-                            Region.from_coordinates(
-                                previous_region.right,
-                                previous_region.top,
-                                row['left'],
-                                previous_region.bottom
-                            ),
-                            None
-                        ))
-                        final_string += ' '
-                    index_mapping.append(OCRMatch(
-                        len(final_string),
-                        len(final_string) + len(row['text']),
-                        Region(row['left'], row['top'], row['width'], row['height']),
-                        row['conf'] / 100
-                    ))
-                    final_string += row['text']
+                            len(final_string) + len(row["text"]),
+                            Region(row["left"], row["top"], row["width"], row["height"]),
+                            row["conf"] / 100,
+                        )
+                    )
+                    final_string += row["text"]
                     new_line = False
 
         self._parsed_text = final_string
@@ -108,12 +111,7 @@ class OCRMatcher:
         return self._parsed_text
 
     def find_bounding_boxes(
-            self,
-            needle: str,
-            start: Optional[int] = None,
-            end: Optional[int] = None,
-            regex: bool = False,
-            regex_flags=0
+        self, needle: str, start: Optional[int] = None, end: Optional[int] = None, regex: bool = False, regex_flags=0
     ) -> Tuple[int, int, List[OCRMatch]]:
         """
         Find needle within the parsed string, returning the start and end indices and the bounding boxes
@@ -161,12 +159,7 @@ class OCRMatcher:
         return no_match_found
 
     def find_bounding_boxes_all(
-            self,
-            needle: str,
-            start: Optional[int] = None,
-            end: Optional[int] = None,
-            regex: bool = False,
-            regex_flags=0
+        self, needle: str, start: Optional[int] = None, end: Optional[int] = None, regex: bool = False, regex_flags=0
     ) -> List[Tuple[int, int, List[OCRMatch]]]:
         results = []
         start = start or 0
@@ -180,12 +173,7 @@ class OCRMatcher:
         return results
 
     def find(
-            self,
-            needle: str,
-            start: Optional[int] = None,
-            end: Optional[int] = None,
-            regex: bool = False,
-            regex_flags=0
+        self, needle: str, start: Optional[int] = None, end: Optional[int] = None, regex: bool = False, regex_flags=0
     ) -> Optional[OCRMatch]:
         index_start, index_end, bounding_boxes = self.find_bounding_boxes(needle, start, end, regex, regex_flags)
 
@@ -199,18 +187,18 @@ class OCRMatcher:
                     max(t.region.right for t in bounding_boxes),
                     max(t.region.bottom for t in bounding_boxes),
                 ),
-                min(t.confidence for t in bounding_boxes if t.confidence is not None)
+                min(t.confidence for t in bounding_boxes if t.confidence is not None),
             )
 
         return None
 
     def find_all(
-            self,
-            needle: str,
-            start: Optional[int] = None,
-            end: Optional[int] = None,
-            regex: bool = False,
-            regex_flags=0,
+        self,
+        needle: str,
+        start: Optional[int] = None,
+        end: Optional[int] = None,
+        regex: bool = False,
+        regex_flags=0,
     ) -> List[OCRMatch]:
         results = []
         start = start or 0

@@ -2,24 +2,21 @@ from pathlib import Path
 from unittest import mock
 from unittest.mock import MagicMock, call
 
-import pytest
 import numpy as np
+import pytest
 
-from bree.image import BaseImage, Image, OutOfBoundsError, MatchedRegionInImage, Screen, RegionInImage
+from bree.image import BaseImage, Image, MatchedRegionInImage, OutOfBoundsError, RegionInImage, Screen
 from bree.location import Region
 from bree.ocr import OCRMatch
 
-RESOURCES_DIR = Path(__file__).parent / 'resources'
+RESOURCES_DIR = Path(__file__).parent / "resources"
 
 
 class TestBaseImage:
     @staticmethod
     def test_inverted_colors():
         any_image = BaseImage()
-        any_numpy_image = np.array([
-            [[1, 2, 3], [4, 5, 6]],
-            [[255, 254, 253], [252, 251, 250]]
-        ])
+        any_numpy_image = np.array([[[1, 2, 3], [4, 5, 6]], [[255, 254, 253], [252, 251, 250]]])
         any_image._get_numpy_image = MagicMock(return_value=any_numpy_image)
 
         actual = any_image.get_as_inverted_colors()
@@ -31,28 +28,21 @@ class TestBaseImage:
     @staticmethod
     def test_inverted_colors_with_alpha_channel():
         any_image = BaseImage()
-        any_numpy_image = np.array([
-            [[1, 2, 3, 0], [4, 5, 6, 1]],
-            [[255, 254, 253, 2], [252, 251, 250, 255]]
-        ])
+        any_numpy_image = np.array([[[1, 2, 3, 0], [4, 5, 6, 1]], [[255, 254, 253, 2], [252, 251, 250, 255]]])
         any_image._get_numpy_image = MagicMock(return_value=any_numpy_image)
 
         actual = any_image.get_as_inverted_colors()
 
-        expected = Image(np.array([
-            [[254, 253, 252, 0], [251, 250, 249, 1]],
-            [[0, 1, 2, 2], [3, 4, 5, 255]]
-        ]))
+        expected = Image(np.array([[[254, 253, 252, 0], [251, 250, 249, 1]], [[0, 1, 2, 2], [3, 4, 5, 255]]]))
         any_image._get_numpy_image.assert_called_once()
         assert actual == expected
 
     @staticmethod
     def test_height():
         any_image = BaseImage()
-        any_numpy_image = np.array([
-            [[1, 2, 3], [4, 5, 6], [7, 8, 9]],
-            [[255, 254, 253], [252, 251, 250], [249, 248, 247]]
-        ])
+        any_numpy_image = np.array(
+            [[[1, 2, 3], [4, 5, 6], [7, 8, 9]], [[255, 254, 253], [252, 251, 250], [249, 248, 247]]]
+        )
         any_image._get_numpy_image = MagicMock(return_value=any_numpy_image)
 
         assert any_image.height == 2
@@ -61,10 +51,9 @@ class TestBaseImage:
     @staticmethod
     def test_width():
         any_image = BaseImage()
-        any_numpy_image = np.array([
-            [[1, 2, 3], [4, 5, 6], [7, 8, 9]],
-            [[255, 254, 253], [252, 251, 250], [249, 248, 247]]
-        ])
+        any_numpy_image = np.array(
+            [[[1, 2, 3], [4, 5, 6], [7, 8, 9]], [[255, 254, 253], [252, 251, 250], [249, 248, 247]]]
+        )
         any_image._get_numpy_image = MagicMock(return_value=any_numpy_image)
 
         assert any_image.width == 3
@@ -73,10 +62,9 @@ class TestBaseImage:
     @staticmethod
     def test_region():
         any_image = BaseImage()
-        any_numpy_image = np.array([
-            [[1, 2, 3], [4, 5, 6], [7, 8, 9]],
-            [[255, 254, 253], [252, 251, 250], [249, 248, 247]]
-        ])
+        any_numpy_image = np.array(
+            [[[1, 2, 3], [4, 5, 6], [7, 8, 9]], [[255, 254, 253], [252, 251, 250], [249, 248, 247]]]
+        )
         any_image._get_numpy_image = MagicMock(return_value=any_numpy_image)
 
         assert any_image.region == Region(0, 0, 3, 2)
@@ -85,7 +73,7 @@ class TestBaseImage:
 class TestImage:
     @staticmethod
     def test_getting_child_image():
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
         region = Region(10, 30, 100, 400)
 
         child_image = any_image.get_child_region(region)
@@ -97,7 +85,7 @@ class TestImage:
 
     @staticmethod
     def test_getting_child_image_where_left_is_negative_raises_out_of_bounds_error():
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
         region = Region(-1, 30, 100, 400)
 
         with pytest.raises(OutOfBoundsError):
@@ -105,7 +93,7 @@ class TestImage:
 
     @staticmethod
     def test_getting_child_image_where_top_is_negative_raises_out_of_bounds_error():
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
         region = Region(10, -1, 100, 400)
 
         with pytest.raises(OutOfBoundsError):
@@ -113,7 +101,7 @@ class TestImage:
 
     @staticmethod
     def test_getting_child_image_where_right_exceeds_bounds_raises_out_of_bounds_error():
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
         region = Region(10, 30, 10_000, 400)
 
         with pytest.raises(OutOfBoundsError):
@@ -121,7 +109,7 @@ class TestImage:
 
     @staticmethod
     def test_getting_child_image_where_bottom_exceeds_bounds_raises_out_of_bounds_error():
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
         region = Region(10, 30, 100, 40_000)
 
         with pytest.raises(OutOfBoundsError):
@@ -129,46 +117,48 @@ class TestImage:
 
     @staticmethod
     def test_getting_text():
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
         mock_ocr_matcher = MagicMock()
-        mock_ocr_matcher.text = 'any value'
+        mock_ocr_matcher.text = "any value"
         any_image._get_ocr_matcher = MagicMock(return_value=mock_ocr_matcher)
 
         actual = any_image.get_text()
 
         any_image._get_ocr_matcher.assert_called_once()
-        assert actual == 'any value'
+        assert actual == "any value"
 
     @staticmethod
     def test_getting_ocr_matcher_for_same_language_only_creates_it_once():
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
         mock_ocr_matcher = MagicMock()
         any_image._create_ocr_matcher = MagicMock(return_value=mock_ocr_matcher)
 
-        any_image._get_ocr_matcher('eng', '\n', '\n\n')
-        any_image._get_ocr_matcher('eng', '\n', '\n\n')
+        any_image._get_ocr_matcher("eng", "\n", "\n\n")
+        any_image._get_ocr_matcher("eng", "\n", "\n\n")
 
         any_image._create_ocr_matcher.assert_called_once()
 
     @staticmethod
     def test_getting_ocr_matcher_for_different_language_creates_different_matchers():
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
         mock_ocr_matcher = MagicMock()
         any_image._create_ocr_matcher = MagicMock(return_value=mock_ocr_matcher)
 
-        any_image._get_ocr_matcher('eng', '\n', '\n\n')
-        any_image._get_ocr_matcher('asd', '\n', '\n\n')
+        any_image._get_ocr_matcher("eng", "\n", "\n\n")
+        any_image._get_ocr_matcher("asd", "\n", "\n\n")
 
         assert any_image._create_ocr_matcher.call_count == 2
-        any_image._create_ocr_matcher.assert_has_calls([
-            call('eng', '\n', '\n\n'),
-            call('asd', '\n', '\n\n'),
-        ])
+        any_image._create_ocr_matcher.assert_has_calls(
+            [
+                call("eng", "\n", "\n\n"),
+                call("asd", "\n", "\n\n"),
+            ]
+        )
 
     @staticmethod
     def test_finding_all_instances_of_an_image():
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
-        needle = Image(RESOURCES_DIR / 'the.png')
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
+        needle = Image(RESOURCES_DIR / "the.png")
 
         found = list(any_image.find_image_all(needle))
 
@@ -185,60 +175,60 @@ class TestImage:
 
     @staticmethod
     def test_finding_all_instances_of_text():
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
         mock_ocr_matcher = MagicMock()
-        mock_ocr_matcher.find_all = MagicMock(return_value=[
-            OCRMatch(1, 8, Region(155, 84, 24, 12), 90),
-            OCRMatch(72, 83, Region(50, 106, 79, 12), 96.697075),
-        ])
+        mock_ocr_matcher.find_all = MagicMock(
+            return_value=[
+                OCRMatch(1, 8, Region(155, 84, 24, 12), 90),
+                OCRMatch(72, 83, Region(50, 106, 79, 12), 96.697075),
+            ]
+        )
         any_image._get_ocr_matcher = MagicMock(return_value=mock_ocr_matcher)
 
-        found = list(any_image.find_text_all(
-            'text',
-            0.89,
-            regex=True,
-            regex_flags=13,
-            language='eng',
-            line_break='\n',
-            paragraph_break='\n\n'
-        ))
+        found = list(
+            any_image.find_text_all(
+                "text", 0.89, regex=True, regex_flags=13, language="eng", line_break="\n", paragraph_break="\n\n"
+            )
+        )
 
         expected = [
-            MatchedRegionInImage(any_image, Region(155, 84, 24, 12), 'text', 90),
-            MatchedRegionInImage(any_image, Region(50, 106, 79, 12), 'text', 96.697075),
+            MatchedRegionInImage(any_image, Region(155, 84, 24, 12), "text", 90),
+            MatchedRegionInImage(any_image, Region(50, 106, 79, 12), "text", 96.697075),
         ]
 
-        any_image._get_ocr_matcher.assert_called_once_with('eng', '\n', '\n\n')
-        mock_ocr_matcher.find_all.assert_called_once_with('text', regex=True, regex_flags=13)
+        any_image._get_ocr_matcher.assert_called_once_with("eng", "\n", "\n\n")
+        mock_ocr_matcher.find_all.assert_called_once_with("text", regex=True, regex_flags=13)
         assert found == expected
 
     @staticmethod
     def test_finding_all_instances_of_text_when_no_results_found():
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
         mock_ocr_matcher = MagicMock()
         mock_ocr_matcher.find_all = MagicMock(return_value=[])
         any_image._get_ocr_matcher = MagicMock(return_value=mock_ocr_matcher)
 
-        found = list(any_image.find_text_all(
-            'text',
-            0.89,
-            regex=True,
-            regex_flags=13,
-            language='eng',
-            line_break='\n',
-            paragraph_break='\n\n',
-        ))
+        found = list(
+            any_image.find_text_all(
+                "text",
+                0.89,
+                regex=True,
+                regex_flags=13,
+                language="eng",
+                line_break="\n",
+                paragraph_break="\n\n",
+            )
+        )
 
         expected = []
 
-        any_image._get_ocr_matcher.assert_called_once_with('eng', '\n', '\n\n')
-        mock_ocr_matcher.find_all.assert_called_once_with('text', regex=True, regex_flags=13)
+        any_image._get_ocr_matcher.assert_called_once_with("eng", "\n", "\n\n")
+        mock_ocr_matcher.find_all.assert_called_once_with("text", regex=True, regex_flags=13)
         assert found == expected
 
     @staticmethod
     def test_finding_best_match_image():
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
-        needle = Image(RESOURCES_DIR / 'the.png')
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
+        needle = Image(RESOURCES_DIR / "the.png")
 
         found = any_image.find_image(needle)
 
@@ -247,278 +237,238 @@ class TestImage:
 
     @staticmethod
     def test_finding_best_match_text():
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
-        any_image.find_text_all = MagicMock(return_value=[
-            MatchedRegionInImage(any_image, Region(155, 84, 24, 12), 'text', 90),
-            MatchedRegionInImage(any_image, Region(50, 106, 79, 12), 'text', 96.697075),
-        ])
-
-        found = any_image.find_text(
-            'text',
-            0.89,
-            regex=True,
-            regex_flags=13,
-            language='eng',
-            line_break='\n',
-            paragraph_break='\n\n',
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
+        any_image.find_text_all = MagicMock(
+            return_value=[
+                MatchedRegionInImage(any_image, Region(155, 84, 24, 12), "text", 90),
+                MatchedRegionInImage(any_image, Region(50, 106, 79, 12), "text", 96.697075),
+            ]
         )
 
-        assert found == MatchedRegionInImage(any_image, Region(50, 106, 79, 12), 'text', 96.697075)
-        any_image.find_text_all.assert_called_once_with(
-            'text',
+        found = any_image.find_text(
+            "text",
             0.89,
             regex=True,
             regex_flags=13,
-            language='eng',
-            line_break='\n',
-            paragraph_break='\n\n',
+            language="eng",
+            line_break="\n",
+            paragraph_break="\n\n",
+        )
+
+        assert found == MatchedRegionInImage(any_image, Region(50, 106, 79, 12), "text", 96.697075)
+        any_image.find_text_all.assert_called_once_with(
+            "text",
+            0.89,
+            regex=True,
+            regex_flags=13,
+            language="eng",
+            line_break="\n",
+            paragraph_break="\n\n",
         )
 
     @staticmethod
     def test_finding_best_match_text_returns_none_on_no_results_found():
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
         any_image.find_text_all = MagicMock(return_value=[])
 
         found = any_image.find_text(
-            'text',
+            "text",
             0.89,
             regex=True,
             regex_flags=13,
-            language='eng',
-            line_break='\n',
-            paragraph_break='\n\n',
+            language="eng",
+            line_break="\n",
+            paragraph_break="\n\n",
         )
 
         assert found is None
         any_image.find_text_all.assert_called_once_with(
-            'text',
+            "text",
             0.89,
             regex=True,
             regex_flags=13,
-            language='eng',
-            line_break='\n',
-            paragraph_break='\n\n',
+            language="eng",
+            line_break="\n",
+            paragraph_break="\n\n",
         )
 
     @staticmethod
     def test_wait_until_image_appears_returns_empty_list_when_needle_not_found_in_image():
-        any_image = Image(RESOURCES_DIR / 'the.png')
-        needle = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image = Image(RESOURCES_DIR / "the.png")
+        needle = Image(RESOURCES_DIR / "wiki-python-text.png")
         any_image.find_image_all = MagicMock(return_value=[])
 
-        with mock.patch('bree.image.pyautogui.sleep', return_value=None, new_callable=MagicMock) as sleep_patch:
-            found = any_image.wait_until_image_appears(needle, 0.8, 10, match_method='ANY-METHOD', scans_per_second=20)
+        with mock.patch("bree.image.pyautogui.sleep", return_value=None, new_callable=MagicMock) as sleep_patch:
+            found = any_image.wait_until_image_appears(needle, 0.8, 10, match_method="ANY-METHOD", scans_per_second=20)
 
             assert found == []
-            any_image.find_image_all.assert_has_calls([
-                call(needle, 0.8, match_method='ANY-METHOD')
-            ] * 200)
+            any_image.find_image_all.assert_has_calls([call(needle, 0.8, match_method="ANY-METHOD")] * 200)
             assert any_image.find_image_all.call_count == 200
-            sleep_patch.assert_has_calls([
-                call(1/20)
-            ] * 200)
+            sleep_patch.assert_has_calls([call(1 / 20)] * 200)
             assert sleep_patch.call_count == 200
 
     @staticmethod
     def test_wait_until_image_appears_returns_found_region_when_needle_found_in_image():
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
-        needle = Image(RESOURCES_DIR / 'the.png')
-        any_image.find_image_all = MagicMock(return_value=[
-            MatchedRegionInImage(any_image, Region(0, 0, 1, 1), needle, 1.0)
-        ])
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
+        needle = Image(RESOURCES_DIR / "the.png")
+        any_image.find_image_all = MagicMock(
+            return_value=[MatchedRegionInImage(any_image, Region(0, 0, 1, 1), needle, 1.0)]
+        )
 
-        with mock.patch('bree.image.pyautogui.sleep', return_value=None, new_callable=MagicMock) as sleep_patch:
-            found = any_image.wait_until_image_appears(needle, 0.8, 10, match_method='ANY-METHOD', scans_per_second=20)
+        with mock.patch("bree.image.pyautogui.sleep", return_value=None, new_callable=MagicMock) as sleep_patch:
+            found = any_image.wait_until_image_appears(needle, 0.8, 10, match_method="ANY-METHOD", scans_per_second=20)
 
             assert found == [MatchedRegionInImage(any_image, Region(0, 0, 1, 1), needle, 1.0)]
-            any_image.find_image_all.assert_has_calls([
-                call(needle, 0.8, match_method='ANY-METHOD')
-            ])
+            any_image.find_image_all.assert_has_calls([call(needle, 0.8, match_method="ANY-METHOD")])
             assert any_image.find_image_all.call_count == 1
             sleep_patch.assert_not_called()
 
     @staticmethod
     def test_wait_until_image_appears_returns_found_region_when_needle_found_in_image_eventually():
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
-        needle = Image(RESOURCES_DIR / 'the.png')
-        any_image.find_image_all = MagicMock(side_effect=[
-            [],
-            [],
-            [MatchedRegionInImage(any_image, Region(0, 0, 1, 1), needle, 1.0)],
-        ])
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
+        needle = Image(RESOURCES_DIR / "the.png")
+        any_image.find_image_all = MagicMock(
+            side_effect=[
+                [],
+                [],
+                [MatchedRegionInImage(any_image, Region(0, 0, 1, 1), needle, 1.0)],
+            ]
+        )
 
-        with mock.patch('bree.image.pyautogui.sleep', return_value=None, new_callable=MagicMock) as sleep_patch:
-            found = any_image.wait_until_image_appears(needle, 0.8, 10, match_method='ANY-METHOD', scans_per_second=20)
+        with mock.patch("bree.image.pyautogui.sleep", return_value=None, new_callable=MagicMock) as sleep_patch:
+            found = any_image.wait_until_image_appears(needle, 0.8, 10, match_method="ANY-METHOD", scans_per_second=20)
 
             assert found == [MatchedRegionInImage(any_image, Region(0, 0, 1, 1), needle, 1.0)]
-            any_image.find_image_all.assert_has_calls([
-                call(needle, 0.8, match_method='ANY-METHOD')
-            ] * 3)
+            any_image.find_image_all.assert_has_calls([call(needle, 0.8, match_method="ANY-METHOD")] * 3)
             assert any_image.find_image_all.call_count == 3
             assert sleep_patch.call_count == 2
 
     @staticmethod
     def test_wait_until_image_appears_scans_once_when_timeout_is_zero():
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
-        needle = Image(RESOURCES_DIR / 'the.png')
-        any_image.find_image_all = MagicMock(return_value=[
-            MatchedRegionInImage(any_image, Region(0, 0, 1, 1), needle, 1.0)
-        ])
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
+        needle = Image(RESOURCES_DIR / "the.png")
+        any_image.find_image_all = MagicMock(
+            return_value=[MatchedRegionInImage(any_image, Region(0, 0, 1, 1), needle, 1.0)]
+        )
 
-        with mock.patch('bree.image.pyautogui.sleep', return_value=None, new_callable=MagicMock) as sleep_patch:
-            found = any_image.wait_until_image_appears(needle, 0.8, 0, match_method='ANY-METHOD', scans_per_second=20)
+        with mock.patch("bree.image.pyautogui.sleep", return_value=None, new_callable=MagicMock) as sleep_patch:
+            found = any_image.wait_until_image_appears(needle, 0.8, 0, match_method="ANY-METHOD", scans_per_second=20)
 
             assert found == [MatchedRegionInImage(any_image, Region(0, 0, 1, 1), needle, 1.0)]
-            any_image.find_image_all.assert_has_calls([
-                call(needle, 0.8, match_method='ANY-METHOD')
-            ])
+            any_image.find_image_all.assert_has_calls([call(needle, 0.8, match_method="ANY-METHOD")])
             assert any_image.find_image_all.call_count == 1
             sleep_patch.assert_not_called()
 
     @staticmethod
     def test_wait_until_image_appears_scans_once_when_scans_per_second_is_zero():
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
-        needle = Image(RESOURCES_DIR / 'the.png')
-        any_image.find_image_all = MagicMock(return_value=[
-            MatchedRegionInImage(any_image, Region(0, 0, 1, 1), needle, 1.0)
-        ])
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
+        needle = Image(RESOURCES_DIR / "the.png")
+        any_image.find_image_all = MagicMock(
+            return_value=[MatchedRegionInImage(any_image, Region(0, 0, 1, 1), needle, 1.0)]
+        )
 
-        with mock.patch('bree.image.pyautogui.sleep', return_value=None, new_callable=MagicMock) as sleep_patch:
-            found = any_image.wait_until_image_appears(needle, 0.8, 10, match_method='ANY-METHOD', scans_per_second=0)
+        with mock.patch("bree.image.pyautogui.sleep", return_value=None, new_callable=MagicMock) as sleep_patch:
+            found = any_image.wait_until_image_appears(needle, 0.8, 10, match_method="ANY-METHOD", scans_per_second=0)
 
             assert found == [MatchedRegionInImage(any_image, Region(0, 0, 1, 1), needle, 1.0)]
-            any_image.find_image_all.assert_has_calls([
-                call(needle, 0.8, match_method='ANY-METHOD')
-            ])
+            any_image.find_image_all.assert_has_calls([call(needle, 0.8, match_method="ANY-METHOD")])
             assert any_image.find_image_all.call_count == 1
             sleep_patch.assert_not_called()
 
     @staticmethod
     def test_wait_until_image_vanishes_returns_true_when_needle_not_found_in_image():
-        any_image = Image(RESOURCES_DIR / 'the.png')
-        needle = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image = Image(RESOURCES_DIR / "the.png")
+        needle = Image(RESOURCES_DIR / "wiki-python-text.png")
         any_image.find_image_all = MagicMock(return_value=[])
 
-        with mock.patch('bree.image.pyautogui.sleep', return_value=None, new_callable=MagicMock) as sleep_patch:
+        with mock.patch("bree.image.pyautogui.sleep", return_value=None, new_callable=MagicMock) as sleep_patch:
             vanished = any_image.wait_until_image_vanishes(
-                needle,
-                0.8,
-                10,
-                match_method='ANY-METHOD',
-                scans_per_second=20
+                needle, 0.8, 10, match_method="ANY-METHOD", scans_per_second=20
             )
 
             assert vanished is True
-            any_image.find_image_all.assert_has_calls([
-                call(needle, 0.8, match_method='ANY-METHOD')
-            ])
+            any_image.find_image_all.assert_has_calls([call(needle, 0.8, match_method="ANY-METHOD")])
             assert any_image.find_image_all.call_count == 1
             sleep_patch.assert_not_called()
 
     @staticmethod
     def test_wait_until_image_vanishes_returns_false_when_needle_found_in_image():
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
-        needle = Image(RESOURCES_DIR / 'the.png')
-        any_image.find_image_all = MagicMock(return_value=[
-            MatchedRegionInImage(any_image, Region(0, 0, 1, 1), needle, 1.0)
-        ])
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
+        needle = Image(RESOURCES_DIR / "the.png")
+        any_image.find_image_all = MagicMock(
+            return_value=[MatchedRegionInImage(any_image, Region(0, 0, 1, 1), needle, 1.0)]
+        )
 
-        with mock.patch('bree.image.pyautogui.sleep', return_value=None, new_callable=MagicMock) as sleep_patch:
+        with mock.patch("bree.image.pyautogui.sleep", return_value=None, new_callable=MagicMock) as sleep_patch:
             vanished = any_image.wait_until_image_vanishes(
-                needle,
-                0.8,
-                10,
-                match_method='ANY-METHOD',
-                scans_per_second=20
+                needle, 0.8, 10, match_method="ANY-METHOD", scans_per_second=20
             )
 
             assert vanished is False
-            any_image.find_image_all.assert_has_calls([
-                call(needle, 0.8, match_method='ANY-METHOD')
-            ] * 200)
+            any_image.find_image_all.assert_has_calls([call(needle, 0.8, match_method="ANY-METHOD")] * 200)
             assert any_image.find_image_all.call_count == 200
-            sleep_patch.assert_has_calls([
-                call(1/20)
-            ] * 200)
+            sleep_patch.assert_has_calls([call(1 / 20)] * 200)
             assert sleep_patch.call_count == 200
 
     @staticmethod
     def test_wait_until_image_vanishes_returns_true_when_needle_eventually_leaves_image():
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
-        needle = Image(RESOURCES_DIR / 'the.png')
-        any_image.find_image_all = MagicMock(side_effect=[
-            [MatchedRegionInImage(any_image, Region(0, 0, 1, 1), needle, 1.0)],
-            [MatchedRegionInImage(any_image, Region(0, 0, 1, 1), needle, 1.0)],
-            [],
-        ])
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
+        needle = Image(RESOURCES_DIR / "the.png")
+        any_image.find_image_all = MagicMock(
+            side_effect=[
+                [MatchedRegionInImage(any_image, Region(0, 0, 1, 1), needle, 1.0)],
+                [MatchedRegionInImage(any_image, Region(0, 0, 1, 1), needle, 1.0)],
+                [],
+            ]
+        )
 
-        with mock.patch('bree.image.pyautogui.sleep', return_value=None, new_callable=MagicMock) as sleep_patch:
+        with mock.patch("bree.image.pyautogui.sleep", return_value=None, new_callable=MagicMock) as sleep_patch:
             vanished = any_image.wait_until_image_vanishes(
-                needle,
-                0.8,
-                10,
-                match_method='ANY-METHOD',
-                scans_per_second=20
+                needle, 0.8, 10, match_method="ANY-METHOD", scans_per_second=20
             )
 
             assert vanished is True
-            any_image.find_image_all.assert_has_calls([
-                call(needle, 0.8, match_method='ANY-METHOD')
-            ] * 3)
+            any_image.find_image_all.assert_has_calls([call(needle, 0.8, match_method="ANY-METHOD")] * 3)
             assert any_image.find_image_all.call_count == 3
-            sleep_patch.assert_has_calls([
-                call(1/20)
-            ] * 2)
+            sleep_patch.assert_has_calls([call(1 / 20)] * 2)
             assert sleep_patch.call_count == 2
 
     @staticmethod
     def test_wait_until_image_vanishes_scans_once_when_timeout_is_zero():
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
-        needle = Image(RESOURCES_DIR / 'the.png')
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
+        needle = Image(RESOURCES_DIR / "the.png")
         any_image.find_image_all = MagicMock(return_value=[])
 
-        with mock.patch('bree.image.pyautogui.sleep', return_value=None, new_callable=MagicMock) as sleep_patch:
+        with mock.patch("bree.image.pyautogui.sleep", return_value=None, new_callable=MagicMock) as sleep_patch:
             vanished = any_image.wait_until_image_vanishes(
-                needle,
-                0.8,
-                10,
-                match_method='ANY-METHOD',
-                scans_per_second=20
+                needle, 0.8, 10, match_method="ANY-METHOD", scans_per_second=20
             )
 
             assert vanished is True
-            any_image.find_image_all.assert_has_calls([
-                call(needle, 0.8, match_method='ANY-METHOD')
-            ])
+            any_image.find_image_all.assert_has_calls([call(needle, 0.8, match_method="ANY-METHOD")])
             assert any_image.find_image_all.call_count == 1
             sleep_patch.assert_not_called()
 
     @staticmethod
     def test_wait_until_image_vanishes_scans_once_when_scans_per_second_is_zero():
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
-        needle = Image(RESOURCES_DIR / 'the.png')
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
+        needle = Image(RESOURCES_DIR / "the.png")
         any_image.find_image_all = MagicMock(return_value=[])
 
-        with mock.patch('bree.image.pyautogui.sleep', return_value=None, new_callable=MagicMock) as sleep_patch:
+        with mock.patch("bree.image.pyautogui.sleep", return_value=None, new_callable=MagicMock) as sleep_patch:
             vanished = any_image.wait_until_image_vanishes(
-                needle,
-                0.8,
-                10,
-                match_method='ANY-METHOD',
-                scans_per_second=20
+                needle, 0.8, 10, match_method="ANY-METHOD", scans_per_second=20
             )
 
             assert vanished is True
-            any_image.find_image_all.assert_has_calls([
-                call(needle, 0.8, match_method='ANY-METHOD')
-            ])
+            any_image.find_image_all.assert_has_calls([call(needle, 0.8, match_method="ANY-METHOD")])
             assert any_image.find_image_all.call_count == 1
             sleep_patch.assert_not_called()
 
     @staticmethod
     def test_contains_image_returns_false_when_needle_not_found_in_image():
-        any_image = Image(RESOURCES_DIR / 'the.png')
-        needle = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image = Image(RESOURCES_DIR / "the.png")
+        needle = Image(RESOURCES_DIR / "wiki-python-text.png")
         any_image.wait_until_image_appears = MagicMock(return_value=[])
 
         found = any_image.contains_image(needle, 0.8, 10, scans_per_second=99)
@@ -528,8 +478,8 @@ class TestImage:
 
     @staticmethod
     def test_contains_image_returns_true_when_needle_found_in_image():
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
-        needle = Image(RESOURCES_DIR / 'the.png')
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
+        needle = Image(RESOURCES_DIR / "the.png")
         any_image.wait_until_image_appears = MagicMock(
             return_value=[MatchedRegionInImage(any_image, Region(0, 0, 1, 1), needle, 1.0)]
         )
@@ -541,8 +491,8 @@ class TestImage:
 
     @staticmethod
     def test_in_returns_false_when_needle_image_not_found_in_image():
-        any_image = Image(RESOURCES_DIR / 'the.png')
-        needle = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image = Image(RESOURCES_DIR / "the.png")
+        needle = Image(RESOURCES_DIR / "wiki-python-text.png")
         any_image.contains_image = MagicMock(return_value=False)
 
         found = needle in any_image
@@ -552,8 +502,8 @@ class TestImage:
 
     @staticmethod
     def test_in_returns_true_when_needle_image_found_in_image():
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
-        needle = Image(RESOURCES_DIR / 'the.png')
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
+        needle = Image(RESOURCES_DIR / "the.png")
         any_image.contains_image = MagicMock(return_value=True)
 
         found = needle in any_image
@@ -565,7 +515,7 @@ class TestImage:
 class TestChildImage:
     @staticmethod
     def test_height():
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
         region = Region(10, 30, 100, 400)
         child_image = any_image.get_child_region(region)
 
@@ -573,7 +523,7 @@ class TestChildImage:
 
     @staticmethod
     def test_width():
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
         region = Region(10, 30, 100, 400)
         child_image = any_image.get_child_region(region)
 
@@ -581,7 +531,7 @@ class TestChildImage:
 
     @staticmethod
     def test_getting_region_for_child():
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
         region = Region(10, 30, 100, 400)
         child_image = any_image.get_child_region(region)
 
@@ -589,7 +539,7 @@ class TestChildImage:
 
     @staticmethod
     def test_getting_absolute_region_for_child():
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
         region = Region(10, 30, 100, 400)
         child_image = any_image.get_child_region(region)
 
@@ -597,21 +547,21 @@ class TestChildImage:
 
     @staticmethod
     def test_getting_grandchild_image():
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
         child_region = Region(10, 30, 100, 400)
         child_image = any_image.get_child_region(child_region)
 
         grandchild_region = Region(3, 5, 20, 100)
         grandchild_image = child_image.get_child_region(grandchild_region)
 
-        expected_child_image = any_image._get_numpy_image()[35:100+35, 13:20+13, :]
+        expected_child_image = any_image._get_numpy_image()[35 : 100 + 35, 13 : 20 + 13, :]
         actual_child_image = grandchild_image._get_numpy_image()
 
         assert (expected_child_image == actual_child_image).all()
 
     @staticmethod
     def test_getting_region_for_grandchild():
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
         child_region = Region(10, 30, 100, 400)
         child_image = any_image.get_child_region(child_region)
 
@@ -622,7 +572,7 @@ class TestChildImage:
 
     @staticmethod
     def test_getting_absolute_region_for_grandchild():
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
         child_region = Region(10, 30, 100, 400)
         child_image = any_image.get_child_region(child_region)
 
@@ -639,10 +589,10 @@ class TestChildImage:
             (None, True, Region(0, 30, 10, 400)),
             (3, False, Region(7, 30, 3, 400)),
             (3, True, Region(7, 30, 3, 400)),
-        ]
+        ],
     )
     def test_getting_raw_region_left(size, absolute, expected_region):
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
         child_region = Region(10, 30, 100, 400)
         child_image = any_image.get_child_region(child_region)
 
@@ -657,10 +607,10 @@ class TestChildImage:
             (None, True, Region(0, 35, 13, 100)),
             (2, False, Region(1, 5, 2, 100)),
             (4, True, Region(9, 35, 4, 100)),
-        ]
+        ],
     )
     def test_getting_raw_region_left_for_grandchild(self, size, absolute, expected_region):
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
         child_region = Region(10, 30, 100, 400)
         child_image = any_image.get_child_region(child_region)
         grandchild_region = Region(3, 5, 20, 100)
@@ -678,10 +628,10 @@ class TestChildImage:
             (None, True, Region(10, 0, 100, 30)),
             (3, False, Region(10, 27, 100, 3)),
             (3, True, Region(10, 27, 100, 3)),
-        ]
+        ],
     )
     def test_getting_raw_region_above(size, absolute, expected_region):
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
         child_region = Region(10, 30, 100, 400)
         child_image = any_image.get_child_region(child_region)
 
@@ -696,10 +646,10 @@ class TestChildImage:
             (None, True, Region(13, 0, 20, 35)),
             (2, False, Region(3, 3, 20, 2)),
             (4, True, Region(13, 31, 20, 4)),
-        ]
+        ],
     )
     def test_getting_raw_region_above_for_grandchild(self, size, absolute, expected_region):
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
         child_region = Region(10, 30, 100, 400)
         child_image = any_image.get_child_region(child_region)
         grandchild_region = Region(3, 5, 20, 100)
@@ -717,10 +667,10 @@ class TestChildImage:
             (None, True, Region(111, 30, 1202, 400)),
             (3, False, Region(111, 30, 3, 400)),
             (3, True, Region(111, 30, 3, 400)),
-        ]
+        ],
     )
     def test_getting_raw_region_right(size, absolute, expected_region):
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
         child_region = Region(10, 30, 100, 400)
         child_image = any_image.get_child_region(child_region)
 
@@ -735,10 +685,10 @@ class TestChildImage:
             (None, True, Region(34, 35, 1279, 100)),
             (2, False, Region(24, 5, 2, 100)),
             (4, True, Region(34, 35, 4, 100)),
-        ]
+        ],
     )
     def test_getting_raw_region_right_for_grandchild(self, size, absolute, expected_region):
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
         child_region = Region(10, 30, 100, 400)
         child_image = any_image.get_child_region(child_region)
         grandchild_region = Region(3, 5, 20, 100)
@@ -756,10 +706,10 @@ class TestChildImage:
             (None, True, Region(10, 431, 100, 386)),
             (3, False, Region(10, 431, 100, 3)),
             (3, True, Region(10, 431, 100, 3)),
-        ]
+        ],
     )
     def test_getting_raw_region_below(size, absolute, expected_region):
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
         child_region = Region(10, 30, 100, 400)
         child_image = any_image.get_child_region(child_region)
 
@@ -774,10 +724,10 @@ class TestChildImage:
             (None, True, Region(13, 136, 20, 681)),
             (2, False, Region(3, 106, 20, 2)),
             (4, True, Region(13, 136, 20, 4)),
-        ]
+        ],
     )
     def test_getting_raw_region_below_for_grandchild(self, size, absolute, expected_region):
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
         child_region = Region(10, 30, 100, 400)
         child_image = any_image.get_child_region(child_region)
         grandchild_region = Region(3, 5, 20, 100)
@@ -795,10 +745,10 @@ class TestChildImage:
             (None, True, Region(0, 30, 10, 400)),
             (3, False, Region(7, 30, 3, 400)),
             (3, True, Region(7, 30, 3, 400)),
-        ]
+        ],
     )
     def test_getting_region_left(size, absolute, expected_region):
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
         child_region = Region(10, 30, 100, 400)
         child_image = any_image.get_child_region(child_region)
 
@@ -813,10 +763,10 @@ class TestChildImage:
             (None, True, Region(0, 35, 13, 100)),
             (2, False, Region(1, 5, 2, 100)),
             (4, True, Region(9, 35, 4, 100)),
-        ]
+        ],
     )
     def test_getting_region_left_for_grandchild(self, size, absolute, expected_region):
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
         child_region = Region(10, 30, 100, 400)
         child_image = any_image.get_child_region(child_region)
         grandchild_region = Region(3, 5, 20, 100)
@@ -834,10 +784,10 @@ class TestChildImage:
             (None, True, Region(10, 0, 100, 30)),
             (3, False, Region(10, 27, 100, 3)),
             (3, True, Region(10, 27, 100, 3)),
-        ]
+        ],
     )
     def test_getting_region_above(size, absolute, expected_region):
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
         child_region = Region(10, 30, 100, 400)
         child_image = any_image.get_child_region(child_region)
 
@@ -852,10 +802,10 @@ class TestChildImage:
             (None, True, Region(13, 0, 20, 35)),
             (2, False, Region(3, 3, 20, 2)),
             (4, True, Region(13, 31, 20, 4)),
-        ]
+        ],
     )
     def test_getting_region_above_for_grandchild(self, size, absolute, expected_region):
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
         child_region = Region(10, 30, 100, 400)
         child_image = any_image.get_child_region(child_region)
         grandchild_region = Region(3, 5, 20, 100)
@@ -873,10 +823,10 @@ class TestChildImage:
             (None, True, Region(111, 30, 1202, 400)),
             (3, False, Region(111, 30, 3, 400)),
             (3, True, Region(111, 30, 3, 400)),
-        ]
+        ],
     )
     def test_getting_region_right(size, absolute, expected_region):
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
         child_region = Region(10, 30, 100, 400)
         child_image = any_image.get_child_region(child_region)
 
@@ -891,10 +841,10 @@ class TestChildImage:
             (None, True, Region(34, 35, 1279, 100)),
             (2, False, Region(24, 5, 2, 100)),
             (4, True, Region(34, 35, 4, 100)),
-        ]
+        ],
     )
     def test_getting_region_right_for_grandchild(self, size, absolute, expected_region):
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
         child_region = Region(10, 30, 100, 400)
         child_image = any_image.get_child_region(child_region)
         grandchild_region = Region(3, 5, 20, 100)
@@ -912,10 +862,10 @@ class TestChildImage:
             (None, True, Region(10, 431, 100, 386)),
             (3, False, Region(10, 431, 100, 3)),
             (3, True, Region(10, 431, 100, 3)),
-        ]
+        ],
     )
     def test_getting_region_below(size, absolute, expected_region):
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
         child_region = Region(10, 30, 100, 400)
         child_image = any_image.get_child_region(child_region)
 
@@ -930,10 +880,10 @@ class TestChildImage:
             (None, True, Region(13, 136, 20, 681)),
             (2, False, Region(3, 106, 20, 2)),
             (4, True, Region(13, 136, 20, 4)),
-        ]
+        ],
     )
     def test_getting_region_below_for_grandchild(self, size, absolute, expected_region):
-        any_image = Image(RESOURCES_DIR / 'wiki-python-text.png')
+        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
         child_region = Region(10, 30, 100, 400)
         child_image = any_image.get_child_region(child_region)
         grandchild_region = Region(3, 5, 20, 100)
@@ -945,18 +895,19 @@ class TestChildImage:
 
 
 class TestScreen:
-
     @staticmethod
     def test_getting_ocr_matcher_for_same_language_creates_it_each_time():
         any_image = Screen()
         mock_ocr_matcher = MagicMock()
         any_image._create_ocr_matcher = MagicMock(return_value=mock_ocr_matcher)
 
-        any_image._get_ocr_matcher('eng', '\n', '\n\n')
-        any_image._get_ocr_matcher('eng', '\n', '\n\n')
+        any_image._get_ocr_matcher("eng", "\n", "\n\n")
+        any_image._get_ocr_matcher("eng", "\n", "\n\n")
 
         assert any_image._create_ocr_matcher.call_count == 2
-        any_image._create_ocr_matcher.assert_has_calls([
-            call('eng', '\n', '\n\n'),
-            call('eng', '\n', '\n\n'),
-        ])
+        any_image._create_ocr_matcher.assert_has_calls(
+            [
+                call("eng", "\n", "\n\n"),
+                call("eng", "\n", "\n\n"),
+            ]
+        )

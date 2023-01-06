@@ -1,6 +1,6 @@
 import math
 from dataclasses import dataclass
-from typing import Union, Tuple
+from typing import Tuple, Union
 
 
 @dataclass(frozen=True)
@@ -9,11 +9,11 @@ class Point:
     y: int
 
     @classmethod
-    def from_tuple(cls, location: Tuple[int, int]) -> 'Point':
+    def from_tuple(cls, location: Tuple[int, int]) -> "Point":
         return cls(location[0], location[1])
 
-    def distance_to(self, other: 'Point') -> float:
-        return math.sqrt((self.x - other.x)**2 + (self.y - other.y)**2)
+    def distance_to(self, other: "Point") -> float:
+        return math.sqrt((self.x - other.x) ** 2 + (self.y - other.y) ** 2)
 
 
 @dataclass(frozen=True)
@@ -75,25 +75,27 @@ class Region:
     def center(self) -> Point:
         return Point((self.right + self.left) // 2, (self.bottom + self.top) // 2)
 
-    def contains(self, item: 'LocationType', overlap='all') -> bool:
+    def contains(self, item: "LocationType", overlap="all") -> bool:
         if isinstance(item, Point):
             return (self.left <= item.x <= self.right) and (self.top <= item.y <= self.bottom)
         elif isinstance(item, Region):
             overlap = overlap.lower()
-            if overlap == 'all':
+            if overlap == "all":
                 return item.min_point in self and item.max_point in self
-            elif overlap == 'any':
+            elif overlap == "any":
                 return (
-                    self.bottom >= item.top and self.top <= item.bottom and
-                    self.right >= item.left and self.left <= item.right
+                    self.bottom >= item.top
+                    and self.top <= item.bottom
+                    and self.right >= item.left
+                    and self.left <= item.right
                 )
             else:
                 raise ValueError(f'Unrecognized value for "overlap": {overlap!r}')
         else:
-            raise NotImplementedError(f'Unsupported type ({type(item)}) for {item!r}')
+            raise NotImplementedError(f"Unsupported type ({type(item)}) for {item!r}")
 
-    def __contains__(self, item: 'LocationType') -> bool:
-        return self.contains(item, overlap='all')
+    def __contains__(self, item: "LocationType") -> bool:
+        return self.contains(item, overlap="all")
 
 
 LocationType = Union[Point, Region]

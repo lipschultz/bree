@@ -1,14 +1,14 @@
 from pathlib import Path
-from typing import Union, Iterable, Tuple, Optional, List, Collection
+from typing import Collection, Iterable, List, Optional, Tuple, Union
 
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import pyautogui
-from PIL import Image as PILImage
 from matplotlib.patches import Rectangle
+from PIL import Image as PILImage
 
-from bree.location import Region, Point
+from bree.location import Point, Region
 from bree.ocr import OCRMatcher
 
 FileReferenceType = Union[str, Path]
@@ -19,11 +19,7 @@ class OutOfBoundsError(Exception):
 
 
 def _find_all_within(
-        needle: np.ndarray,
-        haystack: np.ndarray,
-        match_threshold: float = 1.0,
-        *,
-        match_method=cv2.TM_SQDIFF_NORMED
+    needle: np.ndarray, haystack: np.ndarray, match_threshold: float = 1.0, *, match_method=cv2.TM_SQDIFF_NORMED
 ) -> Iterable[Tuple[Region, float]]:
     # https://stackoverflow.com/questions/7853628/how-do-i-find-an-image-contained-within-an-image/15147009#15147009
     height, width = needle.shape[:2]
@@ -36,10 +32,7 @@ def _find_all_within(
 
     locations = np.where(result >= match_threshold)
     scores = result[locations]
-    return (
-        (Region(x, y, width, height), score)
-        for (x, y), score in zip(zip(*locations[::-1]), scores)
-    )
+    return ((Region(x, y, width, height), score) for (x, y), score in zip(zip(*locations[::-1]), scores))
 
 
 class BaseImage:
@@ -52,7 +45,7 @@ class BaseImage:
         """
         raise NotImplementedError
 
-    def get_as_inverted_colors(self) -> 'Image':
+    def get_as_inverted_colors(self) -> "Image":
         numpy_image = self._get_numpy_image()
         has_alpha = numpy_image.shape[2] == 4
 
@@ -102,18 +95,20 @@ class BaseImage:
 
         ax = plt.gca()
         for bounding_box in bounding_boxes:
-            ax.add_patch(Rectangle(
-                (bounding_box.x, bounding_box.y),
-                bounding_box.width,
-                bounding_box.height,
-                linewidth=2,
-                edgecolor='b',
-                facecolor='none',
-            ))
+            ax.add_patch(
+                Rectangle(
+                    (bounding_box.x, bounding_box.y),
+                    bounding_box.width,
+                    bounding_box.height,
+                    linewidth=2,
+                    edgecolor="b",
+                    facecolor="none",
+                )
+            )
 
         plt.show()
 
-    def get_child_region(self, region: Region) -> 'RegionInImage':
+    def get_child_region(self, region: Region) -> "RegionInImage":
         """
         Get a sub-region of the current image.
 
@@ -121,23 +116,20 @@ class BaseImage:
         :return: A sub-image that is bounded by the region provided.
         """
         if region.left < 0:
-            raise OutOfBoundsError(f'region.x={region.left}.  Value must be at least zero.')
+            raise OutOfBoundsError(f"region.x={region.left}.  Value must be at least zero.")
         if region.top < 0:
-            raise OutOfBoundsError(f'region.y={region.top}.  Value must be at least zero.')
+            raise OutOfBoundsError(f"region.y={region.top}.  Value must be at least zero.")
 
         if region.right >= self.width:
-            raise OutOfBoundsError(f'region.right={region.right}.  Value exceeds size of image (width={self.width}).')
+            raise OutOfBoundsError(f"region.right={region.right}.  Value exceeds size of image (width={self.width}).")
         if region.bottom >= self.height:
-            raise OutOfBoundsError(f'region.left={region.left}.  Value exceeds size of image (height={self.height}).')
+            raise OutOfBoundsError(f"region.left={region.left}.  Value exceeds size of image (height={self.height}).")
 
         return RegionInImage(self, region)
 
     def _create_ocr_matcher(self, language, line_break, paragraph_break) -> OCRMatcher:
         return OCRMatcher(
-            self._get_numpy_image(),
-            language=language,
-            line_break=line_break,
-            paragraph_break=paragraph_break
+            self._get_numpy_image(), language=language, line_break=line_break, paragraph_break=paragraph_break
         )
 
     def _get_ocr_matcher(self, language, line_break, paragraph_break):
@@ -149,7 +141,7 @@ class BaseImage:
             self._ocr_matchers[(language, line_break, paragraph_break)] = matcher
         return matcher
 
-    def get_text(self, *, language: Optional[str] = None, line_break: str = '\n', paragraph_break: str = '\n\n') -> str:
+    def get_text(self, *, language: Optional[str] = None, line_break: str = "\n", paragraph_break: str = "\n\n") -> str:
         """
         Retrieve text from the image.
 
@@ -164,12 +156,12 @@ class BaseImage:
         return matcher.text
 
     def find_image_all(
-            self,
-            needle: Union['BaseImage', Collection['BaseImage']],
-            confidence: float = 0.99,
-            *,
-            match_method=cv2.TM_SQDIFF_NORMED
-    ) -> List['MatchedRegionInImage']:
+        self,
+        needle: Union["BaseImage", Collection["BaseImage"]],
+        confidence: float = 0.99,
+        *,
+        match_method=cv2.TM_SQDIFF_NORMED,
+    ) -> List["MatchedRegionInImage"]:
         """
         Find all locations of ``needle`` in the image.
 
@@ -186,12 +178,7 @@ class BaseImage:
         numpy_image = self._get_numpy_image()
         all_found = []  # type: List[MatchedRegionInImage]
         for n in needle:
-            results = _find_all_within(
-                n._get_numpy_image(),
-                numpy_image,
-                confidence,
-                match_method=match_method
-            )
+            results = _find_all_within(n._get_numpy_image(), numpy_image, confidence, match_method=match_method)
             all_found.extend(
                 MatchedRegionInImage.from_region_in_image(self.get_child_region(region), n, score)
                 for region, score in results
@@ -200,16 +187,16 @@ class BaseImage:
         return all_found
 
     def find_text_all(
-            self,
-            needle: Union[str, Collection[str]],
-            confidence: float = 0.9,
-            *,
-            regex: bool = False,
-            regex_flags=0,
-            language: Optional[str] = None,
-            line_break: str = '\n',
-            paragraph_break: str = '\n\n',
-    ) -> List['MatchedRegionInImage']:
+        self,
+        needle: Union[str, Collection[str]],
+        confidence: float = 0.9,
+        *,
+        regex: bool = False,
+        regex_flags=0,
+        language: Optional[str] = None,
+        line_break: str = "\n",
+        paragraph_break: str = "\n\n",
+    ) -> List["MatchedRegionInImage"]:
         """
         Find all locations of ``needle`` in the image.
 
@@ -243,11 +230,8 @@ class BaseImage:
         return all_found
 
     def find_all(
-            self,
-            needle: Union[str, 'BaseImage'],
-            confidence: Optional[float] = None,
-            **kwargs
-    ) -> List['MatchedRegionInImage']:
+        self, needle: Union[str, "BaseImage"], confidence: Optional[float] = None, **kwargs
+    ) -> List["MatchedRegionInImage"]:
         """
         Find all locations of ``needle`` in the image.
 
@@ -272,14 +256,11 @@ class BaseImage:
                 **kwargs,
             )
         else:
-            raise TypeError(f'Unrecognized type for needle: {type(needle)}')
+            raise TypeError(f"Unrecognized type for needle: {type(needle)}")
 
     def find_image(
-            self,
-            needle: Union['BaseImage', Collection['BaseImage']],
-            *args,
-            **kwargs
-    ) -> Optional['MatchedRegionInImage']:
+        self, needle: Union["BaseImage", Collection["BaseImage"]], *args, **kwargs
+    ) -> Optional["MatchedRegionInImage"]:
         """
         Find the best-matching region in the image.
 
@@ -299,12 +280,7 @@ class BaseImage:
             return result[0]
         return None
 
-    def find_text(
-            self,
-            needle: Union[str, Collection[str]],
-            *args,
-            **kwargs
-    ) -> Optional['MatchedRegionInImage']:
+    def find_text(self, needle: Union[str, Collection[str]], *args, **kwargs) -> Optional["MatchedRegionInImage"]:
         """
         Find the best-matching region in the image.
 
@@ -324,12 +300,7 @@ class BaseImage:
             return result[0]
         return None
 
-    def find(
-            self,
-            needle: Union[str, 'BaseImage'],
-            *args,
-            **kwargs
-    ) -> Optional['MatchedRegionInImage']:
+    def find(self, needle: Union[str, "BaseImage"], *args, **kwargs) -> Optional["MatchedRegionInImage"]:
         """
         Find the best-matching region in the image.
 
@@ -347,17 +318,17 @@ class BaseImage:
         elif isinstance(needle, BaseImage):
             return self.find_image(needle, *args, **kwargs)
         else:
-            raise TypeError(f'Unrecognized type for needle: {type(needle)}')
+            raise TypeError(f"Unrecognized type for needle: {type(needle)}")
 
     def _wait_until_needle_appears(
-            self,
-            needle,
-            confidence: float,
-            timeout: float,
-            scans_per_second: float,
-            find_method,
-            **find_all_args,
-    ) -> List['MatchedRegionInImage']:
+        self,
+        needle,
+        confidence: float,
+        timeout: float,
+        scans_per_second: float,
+        find_method,
+        **find_all_args,
+    ) -> List["MatchedRegionInImage"]:
         scan_count = 0 if timeout * scans_per_second > 0 else -1  # We want the loop to occur at least once
         result = []
         while scan_count < timeout * scans_per_second:
@@ -366,19 +337,19 @@ class BaseImage:
             if len(result) > 0:
                 break
             else:
-                pyautogui.sleep(1/scans_per_second)
+                pyautogui.sleep(1 / scans_per_second)
 
         return result
 
     def wait_until_image_appears(
-            self,
-            needle: Union['BaseImage', Collection['BaseImage']],
-            confidence: float = 0.99,
-            timeout: float = 5,
-            *,
-            match_method=cv2.TM_SQDIFF_NORMED,
-            scans_per_second: float = 3,
-    ) -> List['MatchedRegionInImage']:
+        self,
+        needle: Union["BaseImage", Collection["BaseImage"]],
+        confidence: float = 0.99,
+        timeout: float = 5,
+        *,
+        match_method=cv2.TM_SQDIFF_NORMED,
+        scans_per_second: float = 3,
+    ) -> List["MatchedRegionInImage"]:
         """
         Pauses execution until the needle appears or it times out.
 
@@ -403,18 +374,18 @@ class BaseImage:
         )
 
     def wait_until_text_appears(
-            self,
-            needle: Union[str, Collection[str]],
-            confidence: float = 0.9,
-            timeout: float = 5,
-            *,
-            regex: bool = False,
-            regex_flags=0,
-            language: Optional[str] = None,
-            line_break: str = '\n',
-            paragraph_break: str = '\n\n',
-            scans_per_second: float = 3,
-    ) -> List['MatchedRegionInImage']:
+        self,
+        needle: Union[str, Collection[str]],
+        confidence: float = 0.9,
+        timeout: float = 5,
+        *,
+        regex: bool = False,
+        regex_flags=0,
+        language: Optional[str] = None,
+        line_break: str = "\n",
+        paragraph_break: str = "\n\n",
+        scans_per_second: float = 3,
+    ) -> List["MatchedRegionInImage"]:
         """
         Pauses execution until the needle appears or it times out.
 
@@ -449,13 +420,13 @@ class BaseImage:
         )
 
     def _wait_until_needle_vanishes(
-            self,
-            needle,
-            confidence: float,
-            timeout: float,
-            scans_per_second: float,
-            find_method,
-            **find_all_args,
+        self,
+        needle,
+        confidence: float,
+        timeout: float,
+        scans_per_second: float,
+        find_method,
+        **find_all_args,
     ) -> bool:
         scan_count = 0 if timeout * scans_per_second > 0 else -1  # We want the loop to occur at least once
         while scan_count < timeout * scans_per_second:
@@ -464,18 +435,18 @@ class BaseImage:
             if len(result) == 0:
                 return True
             else:
-                pyautogui.sleep(1/scans_per_second)
+                pyautogui.sleep(1 / scans_per_second)
 
         return False
 
     def wait_until_image_vanishes(
-            self,
-            needle: Union['BaseImage', Collection['BaseImage']],
-            confidence: float = 0.9,
-            timeout: float = 5,
-            *,
-            match_method=cv2.TM_SQDIFF_NORMED,
-            scans_per_second: float = 3,
+        self,
+        needle: Union["BaseImage", Collection["BaseImage"]],
+        confidence: float = 0.9,
+        timeout: float = 5,
+        *,
+        match_method=cv2.TM_SQDIFF_NORMED,
+        scans_per_second: float = 3,
     ) -> bool:
         """
         Pauses execution until the needle vanishes or it times out.
@@ -500,17 +471,17 @@ class BaseImage:
         )
 
     def wait_until_text_vanishes(
-            self,
-            needle: Union[str, Collection[str]],
-            confidence: float = 0.99,
-            timeout: float = 5,
-            *,
-            regex: bool = False,
-            regex_flags=0,
-            language: Optional[str] = None,
-            line_break: str = '\n',
-            paragraph_break: str = '\n\n',
-            scans_per_second: float = 3,
+        self,
+        needle: Union[str, Collection[str]],
+        confidence: float = 0.99,
+        timeout: float = 5,
+        *,
+        regex: bool = False,
+        regex_flags=0,
+        language: Optional[str] = None,
+        line_break: str = "\n",
+        paragraph_break: str = "\n\n",
+        scans_per_second: float = 3,
     ) -> bool:
         """
         Pauses execution until the needle vanishes or it times out.
@@ -544,7 +515,7 @@ class BaseImage:
             paragraph_break=paragraph_break,
         )
 
-    def contains(self, needle: Union[str, 'BaseImage'], *args, **kwargs) -> bool:
+    def contains(self, needle: Union[str, "BaseImage"], *args, **kwargs) -> bool:
         """
         Determines whether ``needle`` appears in the image.
 
@@ -555,9 +526,9 @@ class BaseImage:
             return self.contains_image(needle, *args, **kwargs)
         elif isinstance(needle, str):
             return self.contains_text(needle, *args, **kwargs)
-        raise TypeError(f'Unsupported needle type: {type(needle)}')
+        raise TypeError(f"Unsupported needle type: {type(needle)}")
 
-    def contains_image(self, needle: Union['BaseImage', Collection['BaseImage']], *args, **kwargs) -> bool:
+    def contains_image(self, needle: Union["BaseImage", Collection["BaseImage"]], *args, **kwargs) -> bool:
         """
         Determines whether ``needle`` appears in the image.
 
@@ -575,7 +546,7 @@ class BaseImage:
         """
         return len(self.wait_until_text_appears(needle, *args, **kwargs)) > 0
 
-    def __contains__(self, needle: Union[str, 'BaseImage']) -> bool:
+    def __contains__(self, needle: Union[str, "BaseImage"]) -> bool:
         """
         Determines whether ``needle`` appears in the image.
 
@@ -608,18 +579,18 @@ class Image(BaseImage):
                     image = image[:, :, :3]
                 self.__numpy_image = image
             else:
-                raise TypeError(f'Unrecognized type for image: {self._original_image!r}')
+                raise TypeError(f"Unrecognized type for image: {self._original_image!r}")
         return self.__numpy_image
 
     def __repr__(self):
         if isinstance(self._original_image, np.ndarray):
             str_original_image = (
-                f'array({self._original_image[0, 0, :]}...{self._original_image[-1, -1, :]}, '
-                f'shape={self._original_image.shape}, dtype={self._original_image.dtype})'
+                f"array({self._original_image[0, 0, :]}...{self._original_image[-1, -1, :]}, "
+                f"shape={self._original_image.shape}, dtype={self._original_image.dtype})"
             )
         else:
             str_original_image = repr(self._original_image)
-        return f'Image(image={str_original_image})'
+        return f"Image(image={str_original_image})"
 
 
 class RegionInImage(BaseImage):
@@ -629,7 +600,7 @@ class RegionInImage(BaseImage):
         self._region = region
 
     def __repr__(self) -> str:
-        return f'{self.__class__.__name__}(parent_image={self.parent_image!r}, region={self.region!r})'
+        return f"{self.__class__.__name__}(parent_image={self.parent_image!r}, region={self.region!r})"
 
     def __eq__(self, other: object) -> bool:
         """
@@ -639,9 +610,9 @@ class RegionInImage(BaseImage):
             return NotImplemented
 
         return (
-            isinstance(other, RegionInImage) and
-            self._parent_image == other._parent_image and
-            self._region == other._region
+            isinstance(other, RegionInImage)
+            and self._parent_image == other._parent_image
+            and self._region == other._region
         )
 
     @property
@@ -720,7 +691,7 @@ class RegionInImage(BaseImage):
             region.height,
         )
 
-    def region_left(self, size: Optional[int] = None, absolute=True) -> 'RegionInImage':
+    def region_left(self, size: Optional[int] = None, absolute=True) -> "RegionInImage":
         """
         Get the region (in image) to the left of this current region.
 
@@ -736,10 +707,7 @@ class RegionInImage(BaseImage):
         """
         region = self.raw_region_left(size, absolute)
 
-        return RegionInImage(
-            self._parent_image if not absolute else self.root_image,
-            region
-        )
+        return RegionInImage(self._parent_image if not absolute else self.root_image, region)
 
     def raw_region_above(self, size: Optional[int] = None, absolute=True) -> Region:
         """
@@ -768,7 +736,7 @@ class RegionInImage(BaseImage):
             region.y - top_edge,
         )
 
-    def region_above(self, size: Optional[int] = None, absolute=True) -> 'RegionInImage':
+    def region_above(self, size: Optional[int] = None, absolute=True) -> "RegionInImage":
         """
         Get the region (in image) above this current region.
 
@@ -784,10 +752,7 @@ class RegionInImage(BaseImage):
         """
         region = self.raw_region_above(size, absolute)
 
-        return RegionInImage(
-            self._parent_image if not absolute else self.root_image,
-            region
-        )
+        return RegionInImage(self._parent_image if not absolute else self.root_image, region)
 
     def raw_region_right(self, size: Optional[int] = None, absolute=True) -> Region:
         """
@@ -817,7 +782,7 @@ class RegionInImage(BaseImage):
             region.height,
         )
 
-    def region_right(self, size: Optional[int] = None, absolute=True) -> 'RegionInImage':
+    def region_right(self, size: Optional[int] = None, absolute=True) -> "RegionInImage":
         """
         Get the region (in image) to the right of this current region.
 
@@ -833,10 +798,7 @@ class RegionInImage(BaseImage):
         """
         region = self.raw_region_right(size, absolute)
 
-        return RegionInImage(
-            self._parent_image if not absolute else self.root_image,
-            region
-        )
+        return RegionInImage(self._parent_image if not absolute else self.root_image, region)
 
     def raw_region_below(self, size: Optional[int] = None, absolute=True) -> Region:
         """
@@ -866,7 +828,7 @@ class RegionInImage(BaseImage):
             (total_height - top_edge) if size is None else size,
         )
 
-    def region_below(self, size: Optional[int] = None, absolute=True) -> 'RegionInImage':
+    def region_below(self, size: Optional[int] = None, absolute=True) -> "RegionInImage":
         """
         Get the region (in image) below this current region.
 
@@ -882,10 +844,7 @@ class RegionInImage(BaseImage):
         """
         region = self.raw_region_below(size, absolute)
 
-        return RegionInImage(
-            self._parent_image if not absolute else self.root_image,
-            region
-        )
+        return RegionInImage(self._parent_image if not absolute else self.root_image, region)
 
     def get_left(self, absolute: bool = True) -> int:
         """
@@ -1018,7 +977,7 @@ class RegionInImage(BaseImage):
         """
         return Point(
             (self.get_right(absolute) + self.get_left(absolute)) // 2,
-            (self.get_bottom(absolute) + self.get_top(absolute)) // 2
+            (self.get_bottom(absolute) + self.get_top(absolute)) // 2,
         )
 
     @property
@@ -1048,11 +1007,8 @@ class MatchedRegionInImage(RegionInImage):
 
     @classmethod
     def from_region_in_image(
-            cls,
-            region_in_image: RegionInImage,
-            needle: Union[BaseImage, str],
-            confidence: float
-    ) -> 'MatchedRegionInImage':
+        cls, region_in_image: RegionInImage, needle: Union[BaseImage, str], confidence: float
+    ) -> "MatchedRegionInImage":
         return cls(region_in_image.parent_image, region_in_image.region, needle, confidence)
 
     @property
@@ -1070,9 +1026,9 @@ class MatchedRegionInImage(RegionInImage):
         return self._confidence
 
     def __repr__(self) -> str:
-        attributes = ('parent_image', 'region', 'confidence')
-        attribute_str = ', '.join(f'{attr}={getattr(self, attr)!r}' for attr in attributes)
-        return f'{self.__class__.__name__}({attribute_str})'
+        attributes = ("parent_image", "region", "confidence")
+        attribute_str = ", ".join(f"{attr}={getattr(self, attr)!r}" for attr in attributes)
+        return f"{self.__class__.__name__}({attribute_str})"
 
     def __eq__(self, other: object) -> bool:
         """
@@ -1083,10 +1039,10 @@ class MatchedRegionInImage(RegionInImage):
             return NotImplemented
 
         return (
-            isinstance(other, MatchedRegionInImage) and
-            super().__eq__(other) and
-            self._needle == other._needle and
-            self._confidence == other._confidence
+            isinstance(other, MatchedRegionInImage)
+            and super().__eq__(other)
+            and self._needle == other._needle
+            and self._confidence == other._confidence
         )
 
 
