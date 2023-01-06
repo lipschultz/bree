@@ -43,7 +43,7 @@ class BaseImage:
         """
         When a method needs to access the image, it calls this method.
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     def get_as_inverted_colors(self) -> "Image":
         numpy_image = self._get_numpy_image()
@@ -60,7 +60,7 @@ class BaseImage:
         Determines whether the two images are equal by comparing their numpy representations.
         """
         if not isinstance(other, BaseImage):
-            return NotImplemented
+            return NotImplemented  # pragma: no cover
         return np.array_equal(self._get_numpy_image(), other._get_numpy_image())
 
     @property
