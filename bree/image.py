@@ -563,7 +563,7 @@ class Image(BaseImage):
     def __init__(self, image: Union[FileReferenceType, np.ndarray, PILImage.Image]):
         super().__init__()
         self._original_image = image
-        self.__numpy_image = None
+        self.__numpy_image: Optional[np.ndarray] = None
 
     def _get_numpy_image(self) -> np.ndarray:
         if self.__numpy_image is None:
