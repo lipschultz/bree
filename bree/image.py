@@ -106,6 +106,7 @@ class BaseImage:
                 )
             )
 
+        plt.tight_layout()
         plt.show()
 
     def get_child_region(self, region: Region) -> "RegionInImage":
