@@ -84,12 +84,13 @@ class BaseImage:
         """
         return Region(0, 0, self.width, self.height)
 
-    def show(self, *, bounding_boxes: Iterable[Region] = ()) -> None:
+    def show(self, *, bounding_boxes: Iterable[Region] = (), show_axis: bool = False) -> None:
         """
         Open a window to show the image using matplotlib.
 
         :param bounding_boxes: An iterable of Region objects to show in the displayed image.  The bounding boxes will
             be blue.
+        :param show_axis: Show the axis around the image when ``True``.  Defaults to ``False``.
         """
         plt.imshow(self._get_numpy_image())
 
@@ -106,6 +107,8 @@ class BaseImage:
                 )
             )
 
+        if not show_axis:
+            ax.axis("off")
         plt.tight_layout()
         plt.show()
 
