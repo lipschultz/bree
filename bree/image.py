@@ -1030,7 +1030,7 @@ class MatchedRegionInImage(RegionInImage):
         return self._confidence
 
     def __repr__(self) -> str:
-        attributes = ("parent_image", "region", "confidence")
+        attributes = ("parent_image", "needle", "region", "confidence")
         attribute_str = ", ".join(f"{attr}={getattr(self, attr)!r}" for attr in attributes)
         return f"{self.__class__.__name__}({attribute_str})"
 
