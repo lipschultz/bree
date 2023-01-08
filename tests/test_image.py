@@ -3,7 +3,9 @@ from unittest import mock
 from unittest.mock import MagicMock, call
 
 import numpy as np
+import pyautogui
 import pytest
+from PIL import Image as PILImage
 
 from bree.image import BaseImage, Image, MatchedRegionInImage, OutOfBoundsError, RegionInImage, Screen
 from bree.location import Region
@@ -290,6 +292,311 @@ class TestImage:
             language="eng",
             line_break="\n",
             paragraph_break="\n\n",
+        )
+
+    @staticmethod
+    def test_find_all_when_given_only_one_text_needle():
+        # Arrange
+        any_image = BaseImage()
+        expected_results = [
+            MatchedRegionInImage(any_image, Region(1, 2, 3, 4), "text", 0.9),
+            MatchedRegionInImage(any_image, Region(2, 5, 4, 7), "text", 0.89),
+        ]
+        any_image.find_text_all = mock.MagicMock(return_value=expected_results)
+        any_image.find_image_all = mock.MagicMock(return_value=[])
+
+        # Act
+        actual = any_image.find_all(
+            "text", text_kwargs={"regex": True, "regex_flags": 13}, image_kwargs={"match_method": None}
+        )
+
+        # Assert
+        assert actual == expected_results
+        any_image.find_text_all.assert_called_once_with(["text"], regex=True, regex_flags=13)
+        any_image.find_image_all.assert_called_once_with([], match_method=None)
+
+    @staticmethod
+    def test_find_all_when_given_only_text_needles():
+        # Arrange
+        any_image = BaseImage()
+        expected_results = [
+            MatchedRegionInImage(any_image, Region(1, 2, 3, 4), "text", 0.9),
+            MatchedRegionInImage(any_image, Region(2, 5, 4, 7), "string", 0.89),
+        ]
+        any_image.find_text_all = mock.MagicMock(return_value=expected_results)
+        any_image.find_image_all = mock.MagicMock(return_value=[])
+
+        # Act
+        actual = any_image.find_all(
+            ["text", "string"], text_kwargs={"regex": True, "regex_flags": 13}, image_kwargs={"match_method": None}
+        )
+
+        # Assert
+        assert actual == expected_results
+        any_image.find_text_all.assert_called_once_with(["text", "string"], regex=True, regex_flags=13)
+        any_image.find_image_all.assert_called_once_with([], match_method=None)
+
+    @staticmethod
+    def test_find_all_when_given_only_one_image_needle():
+        # Arrange
+        any_image = BaseImage()
+        needle_image = Image(np.array([[[1, 2, 3], [4, 5, 6]], [[255, 254, 253], [252, 251, 250]]]))
+        expected_results = [
+            MatchedRegionInImage(any_image, Region(1, 2, 3, 4), needle_image, 0.9),
+            MatchedRegionInImage(any_image, Region(2, 5, 4, 7), needle_image, 0.89),
+        ]
+        any_image.find_text_all = mock.MagicMock(return_value=[])
+        any_image.find_image_all = mock.MagicMock(return_value=expected_results)
+
+        # Act
+        actual = any_image.find_all(
+            needle_image, text_kwargs={"regex": True, "regex_flags": 13}, image_kwargs={"match_method": None}
+        )
+
+        # Assert
+        assert actual == expected_results
+        any_image.find_text_all.assert_called_once_with([], regex=True, regex_flags=13)
+        any_image.find_image_all.assert_called_once_with([needle_image], match_method=None)
+
+    @staticmethod
+    def test_find_all_when_given_only_image_needles():
+        # Arrange
+        any_image = BaseImage()
+        needle_image1 = Image(np.array([[[1, 2, 3], [4, 5, 6]], [[255, 254, 253], [252, 251, 250]]]))
+        needle_image2 = Image(np.array([[[2, 5, 6], [25, 45, 56]], [[255, 254, 253], [252, 251, 250]]]))
+        expected_results = [
+            MatchedRegionInImage(any_image, Region(1, 2, 3, 4), needle_image2, 0.9),
+            MatchedRegionInImage(any_image, Region(2, 5, 4, 7), needle_image1, 0.89),
+        ]
+        any_image.find_text_all = mock.MagicMock(return_value=[])
+        any_image.find_image_all = mock.MagicMock(return_value=expected_results)
+
+        # Act
+        actual = any_image.find_all(
+            [needle_image1, needle_image2],
+            text_kwargs={"regex": True, "regex_flags": 13},
+            image_kwargs={"match_method": None},
+        )
+
+        # Assert
+        assert actual == expected_results
+        any_image.find_text_all.assert_called_once_with([], regex=True, regex_flags=13)
+        any_image.find_image_all.assert_called_once_with([needle_image1, needle_image2], match_method=None)
+
+    @staticmethod
+    def test_find_all_when_given_mixed_needles_and_both_find_results():
+        # Arrange
+        any_image = BaseImage()
+        needle_image1 = Image(np.array([[[1, 2, 3], [4, 5, 6]], [[255, 254, 253], [252, 251, 250]]]))
+        needle_image2 = Image(np.array([[[2, 5, 6], [25, 45, 56]], [[255, 254, 253], [252, 251, 250]]]))
+        expected_text_results = [
+            MatchedRegionInImage(any_image, Region(1, 3, 5, 7), "string", 0.59),
+            MatchedRegionInImage(any_image, Region(2, 4, 6, 8), "text", 0.69),
+        ]
+        expected_image_results = [
+            MatchedRegionInImage(any_image, Region(1, 2, 3, 4), needle_image2, 0.9),
+            MatchedRegionInImage(any_image, Region(2, 5, 4, 7), needle_image1, 0.89),
+        ]
+        any_image.find_text_all = mock.MagicMock(return_value=expected_text_results)
+        any_image.find_image_all = mock.MagicMock(return_value=expected_image_results)
+
+        # Act
+        actual = any_image.find_all(
+            ["text", needle_image1, "string", needle_image2],
+            0.88,
+            text_kwargs={"regex": True, "regex_flags": 13},
+            image_kwargs={"match_method": None},
+        )
+
+        # Assert
+        assert actual == expected_text_results + expected_image_results
+        any_image.find_text_all.assert_called_once_with(["text", "string"], 0.88, regex=True, regex_flags=13)
+        any_image.find_image_all.assert_called_once_with([needle_image1, needle_image2], 0.88, match_method=None)
+
+    @staticmethod
+    def test_find_all_when_given_mixed_needles_and_only_text_finds_results():
+        # Arrange
+        any_image = BaseImage()
+        needle_image1 = Image(np.array([[[1, 2, 3], [4, 5, 6]], [[255, 254, 253], [252, 251, 250]]]))
+        needle_image2 = Image(np.array([[[2, 5, 6], [25, 45, 56]], [[255, 254, 253], [252, 251, 250]]]))
+        expected_text_results = [
+            MatchedRegionInImage(any_image, Region(1, 3, 5, 7), "string", 0.59),
+            MatchedRegionInImage(any_image, Region(2, 4, 6, 8), "text", 0.69),
+        ]
+        expected_image_results = []
+        any_image.find_text_all = mock.MagicMock(return_value=expected_text_results)
+        any_image.find_image_all = mock.MagicMock(return_value=expected_image_results)
+
+        # Act
+        actual = any_image.find_all(
+            ["text", needle_image1, "string", needle_image2],
+            0.88,
+            text_kwargs={"regex": True, "regex_flags": 13},
+            image_kwargs={"match_method": None},
+        )
+
+        # Assert
+        assert actual == expected_text_results + expected_image_results
+        any_image.find_text_all.assert_called_once_with(["text", "string"], 0.88, regex=True, regex_flags=13)
+        any_image.find_image_all.assert_called_once_with([needle_image1, needle_image2], 0.88, match_method=None)
+
+    @staticmethod
+    def test_find_all_when_given_mixed_needles_and_only_image_finds_results():
+        # Arrange
+        any_image = BaseImage()
+        needle_image1 = Image(np.array([[[1, 2, 3], [4, 5, 6]], [[255, 254, 253], [252, 251, 250]]]))
+        needle_image2 = Image(np.array([[[2, 5, 6], [25, 45, 56]], [[255, 254, 253], [252, 251, 250]]]))
+        expected_text_results = []
+        expected_image_results = [
+            MatchedRegionInImage(any_image, Region(1, 2, 3, 4), needle_image2, 0.9),
+            MatchedRegionInImage(any_image, Region(2, 5, 4, 7), needle_image1, 0.89),
+        ]
+        any_image.find_text_all = mock.MagicMock(return_value=expected_text_results)
+        any_image.find_image_all = mock.MagicMock(return_value=expected_image_results)
+
+        # Act
+        actual = any_image.find_all(
+            ["text", needle_image1, "string", needle_image2],
+            0.88,
+            text_kwargs={"regex": True, "regex_flags": 13},
+            image_kwargs={"match_method": None},
+        )
+
+        # Assert
+        assert actual == expected_text_results + expected_image_results
+        any_image.find_text_all.assert_called_once_with(["text", "string"], 0.88, regex=True, regex_flags=13)
+        any_image.find_image_all.assert_called_once_with([needle_image1, needle_image2], 0.88, match_method=None)
+
+    @staticmethod
+    def test_find_all_passes_confidence_when_provided_as_positional_argument():
+        # Arrange
+        any_image = BaseImage()
+        needle_image1 = Image(np.array([[[1, 2, 3], [4, 5, 6]], [[255, 254, 253], [252, 251, 250]]]))
+        needle_image2 = Image(np.array([[[2, 5, 6], [25, 45, 56]], [[255, 254, 253], [252, 251, 250]]]))
+        any_image.find_text_all = mock.MagicMock(return_value=[])
+        any_image.find_image_all = mock.MagicMock(return_value=[])
+
+        # Act
+        any_image.find_all(
+            ["text", needle_image1, "string", needle_image2],
+            0.88,
+            text_kwargs={"regex": True, "regex_flags": 13},
+            image_kwargs={"match_method": None},
+        )
+
+        # Assert
+        any_image.find_text_all.assert_called_once_with(["text", "string"], 0.88, regex=True, regex_flags=13)
+        any_image.find_image_all.assert_called_once_with([needle_image1, needle_image2], 0.88, match_method=None)
+
+    @staticmethod
+    def test_find_all_passes_confidence_when_provided_as_keyword_argument():
+        # Arrange
+        any_image = BaseImage()
+        needle_image1 = Image(np.array([[[1, 2, 3], [4, 5, 6]], [[255, 254, 253], [252, 251, 250]]]))
+        needle_image2 = Image(np.array([[[2, 5, 6], [25, 45, 56]], [[255, 254, 253], [252, 251, 250]]]))
+        any_image.find_text_all = mock.MagicMock(return_value=[])
+        any_image.find_image_all = mock.MagicMock(return_value=[])
+
+        # Act
+        any_image.find_all(
+            ["text", needle_image1, "string", needle_image2],
+            text_kwargs={"confidence": 0.66, "regex": True, "regex_flags": 13},
+            image_kwargs={"confidence": 0.88, "match_method": None},
+        )
+
+        # Assert
+        any_image.find_text_all.assert_called_once_with(["text", "string"], confidence=0.66, regex=True, regex_flags=13)
+        any_image.find_image_all.assert_called_once_with(
+            [needle_image1, needle_image2], confidence=0.88, match_method=None
+        )
+
+    @staticmethod
+    def test_finding_best_match():
+        # Arrange
+        any_image = BaseImage()
+        any_image._get_numpy_image = MagicMock(return_value=np.array([[[1, 1, 1], [2, 2, 2]], [[3, 3, 3], [4, 4, 4]]]))
+        needle_image1 = Image(np.array([[[1, 2, 3], [4, 5, 6]], [[255, 254, 253], [252, 251, 250]]]))
+        any_image.find_all = MagicMock(
+            return_value=[
+                MatchedRegionInImage(any_image, Region(155, 84, 24, 12), "text", 0.90),
+                MatchedRegionInImage(any_image, Region(50, 106, 79, 12), needle_image1, 0.96697075),
+            ]
+        )
+
+        # Act
+        found = any_image.find(
+            ["text", needle_image1],
+            0.89,
+            text_kwargs={
+                "regex": True,
+                "regex_flags": 13,
+                "language": "eng",
+                "line_break": "\n",
+                "paragraph_break": "\n\n",
+            },
+            image_kwargs={
+                "match_method": None
+            }
+        )
+
+        # Assert
+        assert found == MatchedRegionInImage(any_image, Region(50, 106, 79, 12), needle_image1, 0.96697075)
+        any_image.find_all.assert_called_once_with(
+            ["text", needle_image1],
+            0.89,
+            text_kwargs={
+                "regex": True,
+                "regex_flags": 13,
+                "language": "eng",
+                "line_break": "\n",
+                "paragraph_break": "\n\n",
+            },
+            image_kwargs={
+                "match_method": None
+            }
+        )
+
+    @staticmethod
+    def test_finding_best_match_returns_none_on_no_results_found():
+        # Arrange
+        any_image = BaseImage()
+        any_image._get_numpy_image = MagicMock(return_value=np.array([[[1, 1, 1], [2, 2, 2]], [[3, 3, 3], [4, 4, 4]]]))
+        needle_image1 = Image(np.array([[[1, 2, 3], [4, 5, 6]], [[255, 254, 253], [252, 251, 250]]]))
+        any_image.find_all = MagicMock(
+            return_value=[]
+        )
+
+        # Act
+        found = any_image.find(
+            ["text", needle_image1],
+            0.89,
+            text_kwargs={
+                "regex": True,
+                "regex_flags": 13,
+                "language": "eng",
+                "line_break": "\n",
+                "paragraph_break": "\n\n",
+            },
+            image_kwargs={
+                "match_method": None
+            }
+        )
+
+        # Assert
+        assert found is None
+        any_image.find_all.assert_called_once_with(
+            ["text", needle_image1],
+            0.89,
+            text_kwargs={
+                "regex": True,
+                "regex_flags": 13,
+                "language": "eng",
+                "line_break": "\n",
+                "paragraph_break": "\n\n",
+            },
+            image_kwargs={
+                "match_method": None
+            }
         )
 
     @staticmethod
@@ -893,6 +1200,42 @@ class TestChildImage:
 
         assert actual_region == RegionInImage(any_image if absolute else child_image, expected_region)
 
+    @staticmethod
+    def test_get_numpy_image_calls_parents_get_numpy_image():
+        # Arrange
+        parent_image = BaseImage()
+        any_numpy_image = np.array([[[1, 2, 3], [4, 5, 6]], [[255, 254, 253], [252, 251, 250]]])
+        parent_image._get_numpy_image = MagicMock(return_value=any_numpy_image)
+
+        child_region = Region(0, 0, 1, 1)
+        child_image = parent_image.get_child_region(child_region)
+        parent_image._get_numpy_image.reset_mock()
+
+        # Act
+        child_image._get_numpy_image()
+
+        # Assert
+        parent_image._get_numpy_image.assert_called_once_with()
+
+    @staticmethod
+    def test_get_numpy_image_calls_parents_get_numpy_image_each_time():
+        # Arrange
+        parent_image = BaseImage()
+        any_numpy_image = np.array([[[1, 2, 3], [4, 5, 6]], [[255, 254, 253], [252, 251, 250]]])
+        parent_image._get_numpy_image = MagicMock(return_value=any_numpy_image)
+
+        child_region = Region(0, 0, 1, 1)
+        child_image = parent_image.get_child_region(child_region)
+        parent_image._get_numpy_image.reset_mock()
+
+        # Act
+        child_image._get_numpy_image()
+        child_image._get_numpy_image()
+        child_image._get_numpy_image()
+
+        # Assert
+        assert parent_image._get_numpy_image.call_count == 3
+
 
 class TestScreen:
     @staticmethod
@@ -911,3 +1254,56 @@ class TestScreen:
                 call("eng", "\n", "\n\n"),
             ]
         )
+
+    @staticmethod
+    def test_getting_screenshot_takes_a_screenshot():
+        any_image = Screen()
+        fake_screenshot = PILImage.new("RGB", (100, 100))
+        pyautogui.screenshot = MagicMock(return_value=fake_screenshot)
+
+        actual = any_image.screenshot()
+
+        pyautogui.screenshot.assert_called_once_with()
+        assert (actual._get_numpy_image() == np.asarray(fake_screenshot)).all()
+
+    @staticmethod
+    def test_calling_screenshot_takes_a_new_screenshot_each_time():
+        any_image = Screen()
+        fake_screenshot1 = PILImage.new("RGB", (100, 100))
+        fake_screenshot2 = PILImage.new("RGB", (10, 10))
+        pyautogui.screenshot = MagicMock(side_effect=[fake_screenshot1, fake_screenshot2])
+
+        first_screenshot = any_image.screenshot()
+        second_screenshot = any_image.screenshot()
+
+        assert pyautogui.screenshot.call_count == 2
+        assert (first_screenshot._get_numpy_image() == np.asarray(fake_screenshot1)).all()
+        assert (second_screenshot._get_numpy_image() == np.asarray(fake_screenshot2)).all()
+
+    @staticmethod
+    def test_calling_get_numpy_image_takes_new_screenshot_each_time():
+        any_image = Screen()
+        fake_screenshot1 = PILImage.new("RGB", (100, 100))
+        fake_screenshot2 = PILImage.new("RGB", (10, 10))
+        pyautogui.screenshot = MagicMock(side_effect=[fake_screenshot1, fake_screenshot2])
+
+        first_screenshot = any_image._get_numpy_image()
+        second_screenshot = any_image._get_numpy_image()
+
+        assert pyautogui.screenshot.call_count == 2
+        assert (first_screenshot == np.asarray(fake_screenshot1)).all()
+        assert (second_screenshot == np.asarray(fake_screenshot2)).all()
+
+    @staticmethod
+    def test_calling_find_all_only_takes_one_screenshot():
+        # Arrange
+        screen = Screen()
+        fake_screenshot = PILImage.open(str(RESOURCES_DIR / "wiki-python-text.png"))
+        pyautogui.screenshot = MagicMock(return_value=fake_screenshot)
+        needle_image = Image(RESOURCES_DIR / "the.png")
+
+        # Act
+        screen.find_all(["text", needle_image])
+
+        # Assert
+        assert pyautogui.screenshot.call_count == 1

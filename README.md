@@ -82,7 +82,7 @@ Will output:
 ```
 Python (programming language)
 
- 
+
 
 From Wikipedia, the free encyclopedia
 (Redirected from Python (Programming Language))
