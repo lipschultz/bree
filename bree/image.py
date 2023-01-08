@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Collection, Iterable, List, Optional, Tuple, Union
+from typing import Any, Collection, Iterable, List, Mapping, Optional, Tuple, Union
 
 import cv2
 import matplotlib.pyplot as plt
@@ -233,8 +233,32 @@ class BaseImage:
 
         return all_found
 
+    @staticmethod
+    def _group_needles_by_type(
+        needles: Union[str, "BaseImage", Iterable[Union[str, "BaseImage"]]]
+    ) -> Tuple[List[str], List["BaseImage"]]:
+        if isinstance(needles, str):
+            text_needles, image_needles = [needles], []
+        elif isinstance(needles, BaseImage):
+            text_needles, image_needles = [], [needles]
+        else:
+            text_needles = []
+            image_needles = []
+            for needle in needles:
+                if isinstance(needle, str):
+                    text_needles.append(needle)
+                elif isinstance(needle, BaseImage):
+                    image_needles.append(needle)
+                else:
+                    raise TypeError(f"Unrecognized type ({type(needle)}) for needle: {needle!r}")
+        return text_needles, image_needles
+
     def find_all(
-        self, needle: Union[str, "BaseImage"], confidence: Optional[float] = None, **kwargs
+        self,
+        needle: Union[str, "BaseImage", Iterable[Union[str, "BaseImage"]]],
+        confidence: Optional[float] = None,
+        text_kwargs: Optional[Mapping[str, Any]] = None,
+        image_kwargs: Optional[Mapping[str, Any]] = None,
     ) -> List["MatchedRegionInImage"]:
         """
         Find all locations of ``needle`` in the image.
@@ -242,28 +266,30 @@ class BaseImage:
         This is a convenience wrapper around ``find_image_all`` and ``find_text_all``.  Based on the type for
         ``needle``, the appropriate method will be called.
 
-        :param needle: Image, text, or regular expression to search for.
+        :param needle: Image, text, regular expression, or iterable of those types to search for.
         :param confidence: Confidence threshold to use for identifying matches.
-        :param kwargs: Additional arguments to pass along to the appropriate method.
+        :param text_kwargs: Additional arguments to pass along to the `find_text_all` method.
+        :param image_kwargs: Additional arguments to pass along to the `find_image_all` method.
         :return: Regions containing the matches.
         """
-        if isinstance(needle, str):
-            return self.find_text_all(
-                needle,
-                *([confidence] if confidence is not None else []),
-                **kwargs,
-            )
-        elif isinstance(needle, BaseImage):
-            return self.find_image_all(
-                needle,
-                *([confidence] if confidence is not None else []),
-                **kwargs,
-            )
-        else:
-            raise TypeError(f"Unrecognized type for needle: {type(needle)}")
+        # If the method header changes, remember to update it in Screen
+        text_kwargs = text_kwargs or {}
+        image_kwargs = image_kwargs or {}
+
+        text_needles, image_needles = self._group_needles_by_type(needle)
+
+        text_results = self.find_text_all(
+            text_needles, *([confidence] if confidence is not None else []), **text_kwargs
+        )
+
+        image_results = self.find_image_all(
+            image_needles, *([confidence] if confidence is not None else []), **image_kwargs
+        )
+
+        return text_results + image_results
 
     def find_image(
-        self, needle: Union["BaseImage", Collection["BaseImage"]], *args, **kwargs
+        self, needle: Union["BaseImage", Collection["BaseImage"]], confidence: Optional[float] = None, **kwargs
     ) -> Optional["MatchedRegionInImage"]:
         """
         Find the best-matching region in the image.
@@ -272,19 +298,21 @@ class BaseImage:
         result.
 
         :param needle: Image or collection of images to find.
-        :param args: Additional positional arguments to pass to ``find_image_all``.
+        :param confidence: Confidence threshold to use for identifying matches.
         :param kwargs: Additional keyword arguments to pass to ``find_image_all``.
         :return: The region with the best match to ``needle``.  Ties will be decided arbitrarily.  If no matches are
             found, ``None`` is returned.  If ``needle`` is a collection, then the best overall match will be returned.
             To get the best match for each needle, call ``find_image`` on each image individually.
         """
-        result = self.find_image_all(needle, *args, **kwargs)
+        result = self.find_image_all(needle, *([confidence] if confidence is not None else []), **kwargs)
         result = sorted(result, key=lambda res: res.confidence, reverse=True)
         if result:
             return result[0]
         return None
 
-    def find_text(self, needle: Union[str, Collection[str]], *args, **kwargs) -> Optional["MatchedRegionInImage"]:
+    def find_text(
+        self, needle: Union[str, Collection[str]], confidence: Optional[float] = None, **kwargs
+    ) -> Optional["MatchedRegionInImage"]:
         """
         Find the best-matching region in the image.
 
@@ -292,37 +320,48 @@ class BaseImage:
         result.
 
         :param needle: Text/regex or collection of text/regex to find.
-        :param args: Additional positional arguments to pass to ``find_text_all``.
+        :param confidence: Confidence threshold to use for identifying matches.
         :param kwargs: Additional keyword arguments to pass to ``find_text_all``.
         :return: The region with the best match to ``needle``.  Ties will be decided arbitrarily.  If no matches are
             found, ``None`` is returned.  If ``needle`` is a collection, then the best overall match will be returned.
             To get the best match for each needle, call ``find_text`` on each image individually.
         """
-        result = self.find_text_all(needle, *args, **kwargs)
+        result = self.find_text_all(needle, *([confidence] if confidence is not None else []), **kwargs)
         result = sorted(result, key=lambda res: res.confidence, reverse=True)
         if result:
             return result[0]
         return None
 
-    def find(self, needle: Union[str, "BaseImage"], *args, **kwargs) -> Optional["MatchedRegionInImage"]:
+    def find(
+        self,
+        needle: Union[str, "BaseImage", Iterable[Union[str, "BaseImage"]]],
+        confidence: Optional[float] = None,
+        text_kwargs: Optional[Mapping[str, Any]] = None,
+        image_kwargs: Optional[Mapping[str, Any]] = None,
+    ) -> Optional["MatchedRegionInImage"]:
         """
         Find the best-matching region in the image.
 
         This is a convenience wrapper around ``find_image`` and ``find_text``.  Based on the type for
         ``needle``, the appropriate method will be called.
 
-        :param needle: Image, text, or regular expression to search for.
-        :param args: Additional positional arguments to pass to the appropriate method.
-        :param kwargs: Additional keyword arguments to pass to the appropriate method.
+        :param needle: Image, text, regular expression, or iterable of any of those types to search for.
+        :param confidence: Confidence threshold to use for identifying matches.
+        :param text_kwargs: Additional arguments to pass along to the `find_text_all` method.
+        :param image_kwargs: Additional arguments to pass along to the `find_image_all` method.
         :return: The region with the best match to ``needle``.  Ties will be decided arbitrarily.  If no matches are
             found, ``None`` is returned.
         """
-        if isinstance(needle, str):
-            return self.find_text(needle, *args, **kwargs)
-        elif isinstance(needle, BaseImage):
-            return self.find_image(needle, *args, **kwargs)
-        else:
-            raise TypeError(f"Unrecognized type for needle: {type(needle)}")
+        result = self.find_all(
+            needle,
+            *([confidence] if confidence is not None else []),
+            text_kwargs=text_kwargs,
+            image_kwargs=image_kwargs,
+        )
+        result = sorted(result, key=lambda res: res.confidence, reverse=True)
+        if result:
+            return result[0]
+        return None
 
     def _wait_until_needle_appears(
         self,
@@ -1066,3 +1105,12 @@ class Screen(BaseImage):
         Get an image of what's currently on the screen.
         """
         return Image(self._get_numpy_image())
+
+    def find_all(
+        self,
+        needle: Union[str, "BaseImage", Iterable[Union[str, "BaseImage"]]],
+        confidence: Optional[float] = None,
+        text_kwargs: Optional[Mapping[str, Any]] = None,
+        image_kwargs: Optional[Mapping[str, Any]] = None,
+    ) -> List["MatchedRegionInImage"]:
+        return self.screenshot().find_all(needle, confidence, text_kwargs, image_kwargs)
