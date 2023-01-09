@@ -96,11 +96,12 @@ See the API docs for how to specify the language and other method parameters.
 The `Screen` and `Image` classes provide the ability to search for text, images, or both using the methods:
 
 * `find_text_all` -- Search for the provided string(s) and return a list of matches
-* `find_text` -- Wrapper around `find_text_all` that returns the best match, or `None`
+* `find_text` -- Wrapper around `find_text_all` that returns the best match, or `None` if no matches found
 * `find_image_all` -- Search for the provided image(s) and return a list of matches
-* `find_image` -- Wrapper around `find_image_all` that returns the best match, or `None`
+* `find_image` -- Wrapper around `find_image_all` that returns the best match, or `None` if no matches found
 * `find_all` -- Returns the combined output of `find_text_all` and `find_image_all`
-* `find` -- Returns the result from `find_text` or `find_image`, whichever has a higher confidence of match
+* `find` -- Returns the result from `find_text` or `find_image`, whichever has a higher confidence of match, or `None`
+  if no matches found
 
 All methods can search for a single value or a collection of values.
 Only matches above a threshold are returned; configure the threshold using the `confidence` parameter (0 = no
@@ -111,10 +112,11 @@ The text search methods can also search using regular expressions (set the `rege
 See the API docs for more details on the parameters.
 
 Matches are instances of the `MatchedRegionInImage` class, which inherits from the `RegionInImage` class where most of
-the methods are defined.  Three properties that might be useful are:
+the methods are defined.  Properties that might be useful are:
 
 * `region` -- an instance of the `Region` class, the bounding box where the search needle was found
   This might not be very useful if the text starts towards the end of one line and ends around the beginning of another.
+* `parent_image` -- a reference to the image that this object is just a region of
 * `confidence` -- confidence in the match (0 = no confidence in match, 1.0 = complete confidence in match)
 * `needle` -- the search needle the match corresponds to, which is useful when searching for multiple needles at once
 
@@ -175,9 +177,48 @@ Will show the image:
 
 ![wiki-python-the-highlighted](docs/wiki-python-the-highlighted.png)
 
-### Regions within the Image
+### Regions within the Screen or Image
 
-TODO
+To select just a region within an image (e.g. a `Screen` or `Image` object), use the `get_child_region` method, which
+returns a `RegionInImage` object.
+
+```python
+from bree.image import Image
+from bree.location import Region
+
+wiki_img = Image("tests/resources/wiki-python-text.png")
+print("Complete image dimensions:", wiki_img.region)
+
+bottom_half = wiki_img.get_child_region(Region.from_coordinates(0, wiki_img.height // 2, wiki_img.width, wiki_img.height))
+print("Just the bottom half:", bottom_half.region)
+```
+
+Will output:
+
+```
+Complete image dimensions: Region(x=0, y=0, width=1313, height=817)
+Just the bottom half: Region(x=0, y=700, width=1312, height=116)
+```
+
+Selecting regions within the screen or an image is perhaps most useful when performing OCR or using the find methods, e.g.:
+
+```python
+from bree.image import Image
+from bree.location import Region
+
+wiki_img = Image("tests/resources/wiki-python-text.png")
+bottom_half = wiki_img.get_child_region(Region.from_coordinates(0, wiki_img.height // 2, wiki_img.width, wiki_img.height))
+text = bottom_half.get_text()
+print(text[:100])
+```
+
+Will output:
+
+```
+Python consistently ranks as one of the most popular programming languages.!341[351[361[37]
+Programm
+```
+
 
 ### Waiting for Images or Text to Appear or Vanish
 

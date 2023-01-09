@@ -124,9 +124,9 @@ class BaseImage:
         if region.top < 0:
             raise OutOfBoundsError(f"region.y={region.top}.  Value must be at least zero.")
 
-        if region.right >= self.width:
+        if region.right > self.width:
             raise OutOfBoundsError(f"region.right={region.right}.  Value exceeds size of image (width={self.width}).")
-        if region.bottom >= self.height:
+        if region.bottom > self.height:
             raise OutOfBoundsError(f"region.left={region.left}.  Value exceeds size of image (height={self.height}).")
 
         return RegionInImage(self, region)
