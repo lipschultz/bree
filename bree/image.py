@@ -63,6 +63,9 @@ class BaseImage:
             return NotImplemented  # pragma: no cover
         return np.array_equal(self._get_numpy_image(), other._get_numpy_image())
 
+    def save(self, location) -> None:
+        PILImage.fromarray(self._get_numpy_image()).save(location)
+
     @property
     def width(self) -> int:
         """
@@ -635,6 +638,12 @@ class Image(BaseImage):
             str_original_image = repr(self._original_image)
         return f"Image(image={str_original_image})"
 
+    def save(self, location) -> None:
+        if isinstance(self._original_image, PILImage.Image):
+            self._original_image.save(location)
+        else:
+            super().save(location)
+
 
 class RegionInImage(BaseImage):
     def __init__(self, parent_image: BaseImage, region: Region):
@@ -1099,6 +1108,9 @@ class Screen(BaseImage):
 
     def _get_numpy_image(self):
         return np.asarray(self._get_pil_image())
+
+    def save(self, location) -> None:
+        self._get_pil_image().save(location)
 
     def screenshot(self) -> Image:
         """
