@@ -2,11 +2,10 @@ from pathlib import Path
 from typing import Any, Collection, Iterable, List, Mapping, Optional, Tuple, Union
 
 import cv2
-import matplotlib.pyplot as plt
 import numpy as np
 import pyautogui
-from matplotlib.patches import Rectangle
 from PIL import Image as PILImage
+from PIL import ImageDraw
 
 from bree.location import Point, Region
 from bree.ocr import OCRMatcher
@@ -45,6 +44,9 @@ class BaseImage:
         """
         raise NotImplementedError  # pragma: no cover
 
+    def _get_pil_image(self) -> PILImage.Image:
+        return PILImage.fromarray(self._get_numpy_image())
+
     def get_as_inverted_colors(self) -> "Image":
         numpy_image = self._get_numpy_image()
         has_alpha = numpy_image.shape[2] == 4
@@ -64,7 +66,7 @@ class BaseImage:
         return np.array_equal(self._get_numpy_image(), other._get_numpy_image())
 
     def save(self, location) -> None:
-        PILImage.fromarray(self._get_numpy_image()).save(location)
+        return self._get_pil_image().save(location)
 
     @property
     def width(self) -> int:
@@ -87,33 +89,30 @@ class BaseImage:
         """
         return Region(0, 0, self.width, self.height)
 
-    def show(self, *, bounding_boxes: Iterable[Region] = (), show_axis: bool = False) -> None:
+    def show(
+        self, *, bounding_boxes: Iterable[Region] = (), output_location: Optional[Union[str, Path]] = None
+    ) -> None:
         """
-        Open a window to show the image using matplotlib.
+        Open a window to show the image.
 
         :param bounding_boxes: An iterable of Region objects to show in the displayed image.  The bounding boxes will
             be blue.
-        :param show_axis: Show the axis around the image when ``True``.  Defaults to ``False``.
+        :param output_location: When not ``None``, file path to save the image to (instead of opening a window to
+            display).
         """
-        plt.imshow(self._get_numpy_image())
-
-        ax = plt.gca()
-        for bounding_box in bounding_boxes:
-            ax.add_patch(
-                Rectangle(
-                    (bounding_box.x, bounding_box.y),
-                    bounding_box.width,
-                    bounding_box.height,
-                    linewidth=2,
-                    edgecolor="b",
-                    facecolor="none",
+        img = self._get_pil_image()
+        if bounding_boxes:
+            img = img.copy()
+            canvas = ImageDraw.Draw(img)
+            for bounding_box in bounding_boxes:
+                canvas.rectangle(
+                    (bounding_box.x, bounding_box.y, bounding_box.right, bounding_box.bottom), outline="blue", width=2
                 )
-            )
 
-        if not show_axis:
-            ax.axis("off")
-        plt.tight_layout()
-        plt.show()
+        if output_location is None:
+            img.show()
+        else:
+            img.save(str(output_location))
 
     def get_child_region(self, region: Region) -> "RegionInImage":
         """
@@ -628,6 +627,11 @@ class Image(BaseImage):
                 raise TypeError(f"Unrecognized type for image: {self._original_image!r}")
         return self.__numpy_image
 
+    def _get_pil_image(self) -> PILImage.Image:
+        if isinstance(self._original_image, PILImage.Image):
+            return self._original_image
+        return super()._get_pil_image()
+
     def __repr__(self):
         if isinstance(self._original_image, np.ndarray):
             str_original_image = (
@@ -637,12 +641,6 @@ class Image(BaseImage):
         else:
             str_original_image = repr(self._original_image)
         return f"Image(image={str_original_image})"
-
-    def save(self, location) -> None:
-        if isinstance(self._original_image, PILImage.Image):
-            self._original_image.save(location)
-        else:
-            super().save(location)
 
 
 class RegionInImage(BaseImage):
@@ -1102,8 +1100,7 @@ class Screen(BaseImage):
     def _get_ocr_matcher(self, language, line_break, paragraph_break):
         return self._create_ocr_matcher(language, line_break, paragraph_break)
 
-    @classmethod
-    def _get_pil_image(cls):
+    def _get_pil_image(self):
         return pyautogui.screenshot()
 
     def _get_numpy_image(self):

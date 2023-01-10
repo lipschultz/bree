@@ -222,4 +222,25 @@ Programm
 
 ### Waiting for Images or Text to Appear or Vanish
 
-TODO
+Methods exist that will wait until an image or text appears or vanishes:
+
+* wait_until_image_appears
+* wait_until_text_appears
+* wait_until_image_vanishes
+* wait_until_text_vanishes
+
+These make the most sense to use on a `Screen` object or a `RegionInImage` that descends from a `Screen` object since
+unlike `Image` objects, `Screen` objects can change over time.
+
+An example:
+
+```python
+from bree.image import Screen
+
+screen = Screen()
+locations_of_the = screen.wait_until_text_appears("the")
+```
+
+This will wait up to 5 seconds (you can change this by setting the `timeout` parameter) for "the" to appear somewhere
+on the screen.  In addition to being able to set any of the parameters used in `find_text_all`, you can also configure
+the time to wait (`timeout`) and how many scans per second (`scans_per_second`).
