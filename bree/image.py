@@ -365,19 +365,35 @@ class BaseImage:
             return result[0]
         return None
 
-    def _wait_until_needle_appears(
+    def wait_until_appears(
         self,
-        needle,
-        confidence: float,
-        timeout: float,
-        scans_per_second: float,
-        find_method,
-        **find_all_args,
+        needle: Union[str, "BaseImage", Iterable[Union[str, "BaseImage"]]],
+        confidence: Optional[float] = None,
+        timeout: float = 5,
+        *,
+        scans_per_second: float = 3,
+        text_kwargs: Optional[Mapping[str, Any]] = None,
+        image_kwargs: Optional[Mapping[str, Any]] = None,
     ) -> List["MatchedRegionInImage"]:
+        """
+        Pauses execution until the needle appears or it times out.
+
+        :param needle: Image or collection of images to wait for.  If a collection, will wait until any image in the
+            collection appears.
+        :param confidence: Sets the confidence threshold.  If the found image is at least this similar, then it is
+            considered a match.  Defaults to 0.99 (99%).  Setting the threshold to 1 (i.e. 100%) may result in false
+            negatives (i.e. exact matches not being found).
+        :param timeout: Wait up to ``timeout`` seconds before giving up waiting.
+        :param scans_per_second: How many times per second should the image be searched for the needle.
+        :param text_kwargs: Additional arguments to pass along to the `find_text_all` method.
+        :param image_kwargs: Additional arguments to pass along to the `find_image_all` method.
+        :return: Regions containing the found needle(s). The regions are not in sorted order.  If ``timeout`` is reached
+            and the needle did not appear, then an empty list will be returned.
+        """
         scan_count = 0 if timeout * scans_per_second > 0 else -1  # We want the loop to occur at least once
         result = []
         while scan_count < timeout * scans_per_second:
-            result = list(find_method(needle, confidence, **find_all_args))
+            result = list(self.find_all(needle, confidence, text_kwargs=text_kwargs, image_kwargs=image_kwargs))
             scan_count += 1
             if len(result) > 0:
                 break
@@ -398,8 +414,8 @@ class BaseImage:
         """
         Pauses execution until the needle appears or it times out.
 
-        :param needle: Image or collection of images to wait for.  If a collection, will wait until any image in the
-            collection appears.
+        :param needle: Text, regular expression, image, or collection of them to wait for.  If a collection, will wait
+            until any in the collection appears.
         :param confidence: Sets the confidence threshold.  If the found image is at least this similar, then it is
             considered a match.  Defaults to 0.99 (99%).  Setting the threshold to 1 (i.e. 100%) may result in false
             negatives (i.e. exact matches not being found).
@@ -409,13 +425,12 @@ class BaseImage:
         :return: Regions containing the found needle(s). The regions are not in sorted order.  If ``timeout`` is reached
             and the needle did not appear, then an empty list will be returned.
         """
-        return self._wait_until_needle_appears(
+        return self.wait_until_appears(
             needle,
             confidence,
             timeout,
-            scans_per_second,
-            self.find_image_all,
-            match_method=match_method,
+            scans_per_second=scans_per_second,
+            image_kwargs={"match_method": match_method},
         )
 
     def wait_until_text_appears(
@@ -451,17 +466,18 @@ class BaseImage:
         :return: Regions containing the found needle(s). The regions are not in sorted order.  If ``timeout`` is reached
             and the needle did not appear, then an empty list will be returned.
         """
-        return self._wait_until_needle_appears(
+        return self.wait_until_appears(
             needle,
             confidence,
             timeout,
-            scans_per_second,
-            self.find_text_all,
-            regex=regex,
-            regex_flags=regex_flags,
-            language=language,
-            line_break=line_break,
-            paragraph_break=paragraph_break,
+            scans_per_second=scans_per_second,
+            text_kwargs={
+                "regex": regex,
+                "regex_flags": regex_flags,
+                "language": language,
+                "line_break": line_break,
+                "paragraph_break": paragraph_break,
+            },
         )
 
     def _wait_until_needle_vanishes(
