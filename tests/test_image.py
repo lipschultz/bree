@@ -703,73 +703,114 @@ class TestBaseImageWaitUntilAppears:
         subject = Image(RESOURCES_DIR / "wiki-python-text.png")
         needle1 = "text"
         needle2 = Image(RESOURCES_DIR / "the.png")
-        subject.find_all = MagicMock(return_value=[MatchedRegionInImage(subject, Region(0, 0, 1, 1), needle2, 1.0)])
+        subject.find_all = MagicMock(return_value=[])
 
         with mock.patch("bree.image.pyautogui.sleep", return_value=None, new_callable=MagicMock) as sleep_patch:
             found = subject.wait_until_appears([needle1, needle2], 0.8, 0, scans_per_second=20)
 
-            assert found == [MatchedRegionInImage(subject, Region(0, 0, 1, 1), needle2, 1.0)]
+            assert found == []
             subject.find_all.assert_has_calls([call([needle1, needle2], 0.8, text_kwargs=None, image_kwargs=None)])
             assert subject.find_all.call_count == 1
-            sleep_patch.assert_not_called()
-
-    @staticmethod
-    def test_wait_until_appears_scans_once_when_scans_per_second_is_zero():
-        subject = Image(RESOURCES_DIR / "wiki-python-text.png")
-        needle1 = "text"
-        needle2 = Image(RESOURCES_DIR / "the.png")
-        subject.find_all = MagicMock(return_value=[MatchedRegionInImage(subject, Region(0, 0, 1, 1), needle2, 1.0)])
-
-        with mock.patch("bree.image.pyautogui.sleep", return_value=None, new_callable=MagicMock) as sleep_patch:
-            found = subject.wait_until_appears([needle1, needle2], 0.8, 10, scans_per_second=0)
-
-            assert found == [MatchedRegionInImage(subject, Region(0, 0, 1, 1), needle2, 1.0)]
-            subject.find_all.assert_has_calls([call([needle1, needle2], 0.8, text_kwargs=None, image_kwargs=None)])
-            assert subject.find_all.call_count == 1
-            sleep_patch.assert_not_called()
+            sleep_patch.assert_called_once_with(1 / 20)
 
 
 class TestBaseImageWaitUntilVanishes:
     @staticmethod
-    def test_wait_until_image_vanishes_returns_true_when_needle_not_found_in_image():
-        any_image = Image(RESOURCES_DIR / "the.png")
-        needle = Image(RESOURCES_DIR / "wiki-python-text.png")
-        any_image.find_image_all = MagicMock(return_value=[])
+    def test_wait_until_image_vanishes_passes_arguments_to_general_wait_until_vanishes_method():
+        # Arrange
+        subject = BaseImage()
+        subject.wait_until_vanishes = MagicMock(return_value=[])
+        any_image1 = Image(RESOURCES_DIR / "the.png")
+        any_image2 = Image(RESOURCES_DIR / "wiki-python-text.png")
+
+        # Act
+        actual = subject.wait_until_image_vanishes(
+            [any_image1, any_image2], 0.8, 10, match_method=10, scans_per_second=15
+        )
+
+        # Assert
+        subject.wait_until_vanishes.assert_called_once_with(
+            [any_image1, any_image2], 0.8, 10, scans_per_second=15, image_kwargs=dict(match_method=10)
+        )
+        assert actual == []
+
+    @staticmethod
+    def test_wait_until_text_vanishes_passes_arguments_to_general_wait_until_vanishes_method():
+        # Arrange
+        subject = BaseImage()
+        subject.wait_until_vanishes = MagicMock(return_value=[])
+        any_text1 = "text"
+        any_text2 = "str"
+
+        # Act
+        actual = subject.wait_until_text_vanishes(
+            [any_text1, any_text2],
+            0.8,
+            10,
+            regex=True,
+            regex_flags=14,
+            language="deu",
+            line_break="\r\n",
+            paragraph_break="\r\n\r\n",
+            scans_per_second=15,
+        )
+
+        # Assert
+        subject.wait_until_vanishes.assert_called_once_with(
+            [any_text1, any_text2],
+            0.8,
+            10,
+            scans_per_second=15,
+            text_kwargs=dict(regex=True, regex_flags=14, language="deu", line_break="\r\n", paragraph_break="\r\n\r\n"),
+        )
+        assert actual == []
+
+    @staticmethod
+    def test_wait_until_vanishes_returns_true_when_needle_not_found_in_image():
+        subject = BaseImage()
+        subject.find_image_all = MagicMock(return_value=[])
+        subject.find_text_all = MagicMock(return_value=[])
+        needle1 = "text"
+        needle2 = BaseImage()
 
         with mock.patch("bree.image.pyautogui.sleep", return_value=None, new_callable=MagicMock) as sleep_patch:
-            vanished = any_image.wait_until_image_vanishes(
-                needle, 0.8, 10, match_method="ANY-METHOD", scans_per_second=20
+            result = subject.wait_until_vanishes(
+                [needle1, needle2], 0.8, 10, scans_per_second=20, image_kwargs={"match_method": "ANY-METHOD"}
             )
 
-            assert vanished is True
-            any_image.find_image_all.assert_has_calls([call(needle, 0.8, match_method="ANY-METHOD")])
-            assert any_image.find_image_all.call_count == 1
+            assert result is True
+            subject.find_text_all.assert_called_once_with([needle1], 0.8)
+            subject.find_image_all.assert_called_once_with([needle2], 0.8, match_method="ANY-METHOD")
             sleep_patch.assert_not_called()
 
     @staticmethod
-    def test_wait_until_image_vanishes_returns_false_when_needle_found_in_image():
-        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
-        needle = Image(RESOURCES_DIR / "the.png")
-        any_image.find_image_all = MagicMock(
-            return_value=[MatchedRegionInImage(any_image, Region(0, 0, 1, 1), needle, 1.0)]
+    def test_wait_until_vanishes_returns_false_when_needle_found_in_image():
+        subject = Image(RESOURCES_DIR / "wiki-python-text.png")
+        needle1 = "text"
+        needle2 = Image(RESOURCES_DIR / "the.png")
+        subject.find_image_all = MagicMock(
+            return_value=[MatchedRegionInImage(subject, Region(0, 0, 1, 1), needle2, 1.0)]
         )
+        subject.find_text_all = MagicMock(return_value=[])
 
         with mock.patch("bree.image.pyautogui.sleep", return_value=None, new_callable=MagicMock) as sleep_patch:
-            vanished = any_image.wait_until_image_vanishes(
-                needle, 0.8, 10, match_method="ANY-METHOD", scans_per_second=20
+            result = subject.wait_until_vanishes(
+                [needle1, needle2], 0.8, 10, scans_per_second=20, image_kwargs={"match_method": "ANY-METHOD"}
             )
 
-            assert vanished is False
-            any_image.find_image_all.assert_has_calls([call(needle, 0.8, match_method="ANY-METHOD")] * 200)
-            assert any_image.find_image_all.call_count == 200
-            sleep_patch.assert_has_calls([call(1 / 20)] * 200)
+            assert result is False
+            assert subject.find_text_all.call_count == 200
+            subject.find_text_all.assert_has_calls([call([needle1], 0.8)] * 200)
+            assert subject.find_image_all.call_count == 200
+            subject.find_image_all.assert_has_calls([call([needle2], 0.8, match_method="ANY-METHOD")] * 200)
             assert sleep_patch.call_count == 200
+            sleep_patch.assert_has_calls([call(1 / 20)] * 200)
 
     @staticmethod
-    def test_wait_until_image_vanishes_returns_true_when_needle_eventually_leaves_image():
+    def test_wait_until_vanishes_returns_true_when_needle_eventually_leaves_image():
         any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
-        needle = Image(RESOURCES_DIR / "the.png")
-        any_image.find_image_all = MagicMock(
+        needle = "text"
+        any_image.find_all = MagicMock(
             side_effect=[
                 [MatchedRegionInImage(any_image, Region(0, 0, 1, 1), needle, 1.0)],
                 [MatchedRegionInImage(any_image, Region(0, 0, 1, 1), needle, 1.0)],
@@ -778,47 +819,27 @@ class TestBaseImageWaitUntilVanishes:
         )
 
         with mock.patch("bree.image.pyautogui.sleep", return_value=None, new_callable=MagicMock) as sleep_patch:
-            vanished = any_image.wait_until_image_vanishes(
-                needle, 0.8, 10, match_method="ANY-METHOD", scans_per_second=20
-            )
+            vanished = any_image.wait_until_vanishes(needle, 0.8, 10, scans_per_second=20)
 
             assert vanished is True
-            any_image.find_image_all.assert_has_calls([call(needle, 0.8, match_method="ANY-METHOD")] * 3)
-            assert any_image.find_image_all.call_count == 3
+            any_image.find_all.assert_has_calls([call(needle, 0.8, text_kwargs=None, image_kwargs=None)] * 3)
+            assert any_image.find_all.call_count == 3
             sleep_patch.assert_has_calls([call(1 / 20)] * 2)
             assert sleep_patch.call_count == 2
 
     @staticmethod
-    def test_wait_until_image_vanishes_scans_once_when_timeout_is_zero():
+    def test_wait_until_vanishes_scans_once_when_timeout_is_zero():
         any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
-        needle = Image(RESOURCES_DIR / "the.png")
-        any_image.find_image_all = MagicMock(return_value=[])
+        needle = "text"
+        any_image.find_all = MagicMock(return_value=[MatchedRegionInImage(any_image, Region(0, 0, 1, 1), needle, 1.0)])
 
         with mock.patch("bree.image.pyautogui.sleep", return_value=None, new_callable=MagicMock) as sleep_patch:
-            vanished = any_image.wait_until_image_vanishes(
-                needle, 0.8, 10, match_method="ANY-METHOD", scans_per_second=20
-            )
+            vanished = any_image.wait_until_vanishes(needle, 0.8, 0, scans_per_second=20)
 
-            assert vanished is True
-            any_image.find_image_all.assert_has_calls([call(needle, 0.8, match_method="ANY-METHOD")])
-            assert any_image.find_image_all.call_count == 1
-            sleep_patch.assert_not_called()
-
-    @staticmethod
-    def test_wait_until_image_vanishes_scans_once_when_scans_per_second_is_zero():
-        any_image = Image(RESOURCES_DIR / "wiki-python-text.png")
-        needle = Image(RESOURCES_DIR / "the.png")
-        any_image.find_image_all = MagicMock(return_value=[])
-
-        with mock.patch("bree.image.pyautogui.sleep", return_value=None, new_callable=MagicMock) as sleep_patch:
-            vanished = any_image.wait_until_image_vanishes(
-                needle, 0.8, 10, match_method="ANY-METHOD", scans_per_second=20
-            )
-
-            assert vanished is True
-            any_image.find_image_all.assert_has_calls([call(needle, 0.8, match_method="ANY-METHOD")])
-            assert any_image.find_image_all.call_count == 1
-            sleep_patch.assert_not_called()
+            assert vanished is False
+            any_image.find_all.assert_has_calls([call(needle, 0.8, text_kwargs=None, image_kwargs=None)])
+            assert any_image.find_all.call_count == 1
+            sleep_patch.assert_called_once_with(1 / 20)
 
 
 class TestBaseImageContains:

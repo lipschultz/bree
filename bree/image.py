@@ -480,18 +480,33 @@ class BaseImage:
             },
         )
 
-    def _wait_until_needle_vanishes(
+    def wait_until_vanishes(
         self,
-        needle,
-        confidence: float,
-        timeout: float,
-        scans_per_second: float,
-        find_method,
-        **find_all_args,
+        needle: Union[str, "BaseImage", Iterable[Union[str, "BaseImage"]]],
+        confidence: Optional[float] = None,
+        timeout: float = 5,
+        *,
+        scans_per_second: float = 3,
+        text_kwargs: Optional[Mapping[str, Any]] = None,
+        image_kwargs: Optional[Mapping[str, Any]] = None,
     ) -> bool:
+        """
+        Pauses execution until the needle vanishes or it times out.
+
+        :param needle: Image or collection of images to wait for.  If a collection, will wait until any image in the
+            collection vanishes.
+        :param confidence: Sets the confidence threshold.  If the found image is at least this similar, then it is
+            considered a match.  Defaults to 0.99 (99%).  Setting the threshold to 1 (i.e. 100%) may result in false
+            negatives (i.e. exact matches not being found).
+        :param timeout: Wait up to ``timeout`` seconds before giving up waiting.
+        :param scans_per_second: How many times per second should the image be searched for the needle.
+        :param text_kwargs: Additional arguments to pass along to the `find_text_all` method.
+        :param image_kwargs: Additional arguments to pass along to the `find_image_all` method.
+        :return: True if the needle vanished, False if the method timed out.
+        """
         scan_count = 0 if timeout * scans_per_second > 0 else -1  # We want the loop to occur at least once
         while scan_count < timeout * scans_per_second:
-            result = list(find_method(needle, confidence, **find_all_args))
+            result = list(self.find_all(needle, confidence, text_kwargs=text_kwargs, image_kwargs=image_kwargs))
             scan_count += 1
             if len(result) == 0:
                 return True
@@ -522,13 +537,12 @@ class BaseImage:
         :param scans_per_second: How many times per second should the image be searched for the needle.
         :return: True if the needle vanished, False if the method timed out.
         """
-        return self._wait_until_needle_vanishes(
+        return self.wait_until_vanishes(
             needle,
             confidence,
             timeout,
-            scans_per_second,
-            self.find_image_all,
-            match_method=match_method,
+            scans_per_second=scans_per_second,
+            image_kwargs={"match_method": match_method},
         )
 
     def wait_until_text_vanishes(
@@ -563,17 +577,18 @@ class BaseImage:
         :param scans_per_second: How many times per second should the image be searched for the needle.
         :return: True if the needle vanished, False if the method timed out.
         """
-        return self._wait_until_needle_vanishes(
+        return self.wait_until_vanishes(
             needle,
             confidence,
             timeout,
-            scans_per_second,
-            self.find_text_all,
-            regex=regex,
-            regex_flags=regex_flags,
-            language=language,
-            line_break=line_break,
-            paragraph_break=paragraph_break,
+            scans_per_second=scans_per_second,
+            text_kwargs={
+                "regex": regex,
+                "regex_flags": regex_flags,
+                "language": language,
+                "line_break": line_break,
+                "paragraph_break": paragraph_break,
+            },
         )
 
     def contains(self, needle: Union[str, "BaseImage"], *args, **kwargs) -> bool:
