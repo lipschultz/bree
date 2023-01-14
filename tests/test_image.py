@@ -1425,6 +1425,49 @@ class TestRegionInImage:
         subject.get_center.assert_called_once_with()
 
 
+class TestMatchedRegionInImage:
+    @staticmethod
+    def test_creating_matched_region_in_image_from_region_in_image():
+        subject = MatchedRegionInImage.from_region_in_image(
+            RegionInImage(Image(RESOURCES_DIR / "the.png"), Region(1, 1, 13, 7)), "needle", 0.85
+        )
+
+        assert subject == MatchedRegionInImage(Image(RESOURCES_DIR / "the.png"), Region(1, 1, 13, 7), "needle", 0.85)
+
+    @staticmethod
+    def test_needle_property():
+        subject = MatchedRegionInImage(Image(RESOURCES_DIR / "the.png"), Region(1, 2, 10, 20), "needle", 0.5)
+
+        assert subject.needle == "needle"
+
+    @staticmethod
+    def test_confidence_property():
+        subject = MatchedRegionInImage(Image(RESOURCES_DIR / "the.png"), Region(1, 2, 10, 20), "needle", 0.5)
+
+        assert subject.confidence == 0.5
+
+    @staticmethod
+    def test_two_objects_equal():
+        subject = MatchedRegionInImage(Image(RESOURCES_DIR / "the.png"), Region(1, 2, 10, 20), "needle", 0.5)
+
+        assert subject == MatchedRegionInImage(Image(RESOURCES_DIR / "the.png"), Region(1, 2, 10, 20), "needle", 0.5)
+
+    @staticmethod
+    @pytest.mark.parametrize(
+        "parent_image, region, needle, confidence",
+        [
+            (Image(RESOURCES_DIR / "wiki-python-text.png"), Region(1, 2, 10, 20), "needle", 0.5),
+            (Image(RESOURCES_DIR / "the.png"), Region(1, 2, 11, 20), "needle", 0.5),
+            (Image(RESOURCES_DIR / "the.png"), Region(1, 2, 10, 20), "needles", 0.5),
+            (Image(RESOURCES_DIR / "the.png"), Region(1, 2, 10, 20), "needle", 0.25),
+        ],
+    )
+    def test_two_objects_not_equal(parent_image, region, needle, confidence):
+        subject = MatchedRegionInImage(Image(RESOURCES_DIR / "the.png"), Region(1, 2, 10, 20), "needle", 0.5)
+
+        assert subject != MatchedRegionInImage(parent_image, region, needle, confidence)
+
+
 class TestScreen:
     @staticmethod
     def test_getting_ocr_matcher_for_same_language_creates_it_each_time():
