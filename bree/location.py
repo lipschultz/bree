@@ -78,21 +78,20 @@ class Region:
     def contains(self, item: "LocationType", overlap="all") -> bool:
         if isinstance(item, Point):
             return (self.left <= item.x <= self.right) and (self.top <= item.y <= self.bottom)
-        elif isinstance(item, Region):
+        if isinstance(item, Region):
             overlap = overlap.lower()
             if overlap == "all":
                 return item.min_point in self and item.max_point in self
-            elif overlap == "any":
+            if overlap == "any":
                 return (
                     self.bottom >= item.top
                     and self.top <= item.bottom
                     and self.right >= item.left
                     and self.left <= item.right
                 )
-            else:
-                raise ValueError(f'Unrecognized value for "overlap": {overlap!r}')
-        else:
-            raise NotImplementedError(f"Unsupported type ({type(item)}) for {item!r}")
+            raise ValueError(f'Unrecognized value for "overlap": {overlap!r}')
+
+        raise NotImplementedError(f"Unsupported type ({type(item)}) for {item!r}")
 
     def __contains__(self, item: "LocationType") -> bool:
         return self.contains(item, overlap="all")

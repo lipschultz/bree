@@ -184,10 +184,12 @@ class BaseImage:
 
         numpy_image = self._get_numpy_image()
         all_found = []  # type: List[MatchedRegionInImage]
-        for n in needle:
-            results = _find_all_within(n._get_numpy_image(), numpy_image, confidence, match_method=match_method)
+        for needle_part in needle:
+            results = _find_all_within(
+                needle_part._get_numpy_image(), numpy_image, confidence, match_method=match_method
+            )
             all_found.extend(
-                MatchedRegionInImage.from_region_in_image(self.get_child_region(region), n, score)
+                MatchedRegionInImage.from_region_in_image(self.get_child_region(region), needle_part, score)
                 for region, score in results
             )
 
@@ -226,10 +228,12 @@ class BaseImage:
         matcher = self._get_ocr_matcher(language, line_break, paragraph_break)
 
         all_found = []  # type: List[MatchedRegionInImage]
-        for n in needle:
-            results = matcher.find_all(n, regex=regex, regex_flags=regex_flags)
+        for needle_part in needle:
+            results = matcher.find_all(needle_part, regex=regex, regex_flags=regex_flags)
             all_found.extend(
-                MatchedRegionInImage.from_region_in_image(self.get_child_region(result.region), n, result.confidence)
+                MatchedRegionInImage.from_region_in_image(
+                    self.get_child_region(result.region), needle_part, result.confidence
+                )
                 for result in results
                 if result.confidence >= confidence
             )
@@ -396,8 +400,8 @@ class BaseImage:
             scan_count += 1
             if len(result) > 0:
                 break
-            else:
-                pyautogui.sleep(1 / scans_per_second)
+
+            pyautogui.sleep(1 / scans_per_second)
 
         return result
 
@@ -509,8 +513,8 @@ class BaseImage:
             scan_count += 1
             if len(result) == 0:
                 return True
-            else:
-                pyautogui.sleep(1 / scans_per_second)
+
+            pyautogui.sleep(1 / scans_per_second)
 
         return False
 
@@ -599,7 +603,7 @@ class BaseImage:
         """
         if isinstance(needle, BaseImage):
             return self.contains_image(needle, *args, **kwargs)
-        elif isinstance(needle, str):
+        if isinstance(needle, str):
             return self.contains_text(needle, *args, **kwargs)
         raise TypeError(f"Unsupported needle type: {type(needle)}")
 
@@ -732,8 +736,8 @@ class RegionInImage(BaseImage):
                 self.region.width,
                 self.region.height,
             )
-        else:
-            return self.region
+
+        return self.region
 
     def _get_numpy_image(self) -> np.ndarray:
         x_min = self._region.left

@@ -31,9 +31,11 @@ class OCRMatcher:
 
     def _get_raw_ocr(self):
         if self._df is None:
-            df = pytesseract.image_to_data(self._image, lang=self._language, output_type=pytesseract.Output.DATAFRAME)
-            df = df.dropna()
-            self._df = df
+            ocr_data = pytesseract.image_to_data(
+                self._image, lang=self._language, output_type=pytesseract.Output.DATAFRAME
+            )
+            ocr_data = ocr_data.dropna()
+            self._df = ocr_data
         return self._df
 
     def process(self, line_break="\n", paragraph_break="\n\n"):
