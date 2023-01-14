@@ -1086,19 +1086,19 @@ class RegionInImage(BaseImage):
 
 
 class MatchedRegionInImage(RegionInImage):
-    def __init__(self, parent_image: BaseImage, region: Region, needle: Union[BaseImage, str], confidence: float):
+    def __init__(self, parent_image: BaseImage, region: Region, needle: NeedleType, confidence: float):
         super().__init__(parent_image, region)
         self._needle = needle
         self._confidence = confidence
 
     @classmethod
     def from_region_in_image(
-        cls, region_in_image: RegionInImage, needle: Union[BaseImage, str], confidence: float
+        cls, region_in_image: RegionInImage, needle: NeedleType, confidence: float
     ) -> "MatchedRegionInImage":
         return cls(region_in_image.parent_image, region_in_image.region, needle, confidence)
 
     @property
-    def needle(self) -> Union[BaseImage, str]:
+    def needle(self) -> NeedleType:
         """
         Needle used to find the matched region.
         """
@@ -1111,7 +1111,7 @@ class MatchedRegionInImage(RegionInImage):
         """
         return self._confidence
 
-    def __repr__(self) -> str:
+    def __repr__(self) -> str:  # pragma: no cover
         attributes = ("parent_image", "needle", "region", "confidence")
         attribute_str = ", ".join(f"{attr}={getattr(self, attr)!r}" for attr in attributes)
         return f"{self.__class__.__name__}({attribute_str})"
@@ -1122,7 +1122,7 @@ class MatchedRegionInImage(RegionInImage):
         ``RegionInImage``, the needles, and the confidences.
         """
         if not isinstance(other, MatchedRegionInImage):
-            return NotImplemented
+            return NotImplemented  # pragma: no cover
 
         return (
             isinstance(other, MatchedRegionInImage)
@@ -1153,7 +1153,7 @@ class Screen(BaseImage):
 
     def find_all(
         self,
-        needle: Union[str, "BaseImage", Iterable[Union[str, "BaseImage"]]],
+        needle: Union[BaseImage, Iterable[NeedleType]],
         confidence: Optional[float] = None,
         text_kwargs: Optional[Mapping[str, Any]] = None,
         image_kwargs: Optional[Mapping[str, Any]] = None,

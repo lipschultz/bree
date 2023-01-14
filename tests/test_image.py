@@ -6,12 +6,29 @@ import numpy as np
 import pyautogui
 import pytest
 from PIL import Image as PILImage
+from PIL import ImageChops
 
 from bree.image import BaseImage, Image, MatchedRegionInImage, OutOfBoundsError, RegionInImage, Screen
-from bree.location import Region
+from bree.location import Point, Region
 from bree.ocr import OCRMatch
 
 RESOURCES_DIR = Path(__file__).parent / "resources"
+
+
+def are_pil_images_equal(img1, img2):
+    # from https://stackoverflow.com/a/68402702
+    equal_size = img1.height == img2.height and img1.width == img2.width
+
+    if img1.mode == img2.mode == "RGBA":
+        img1_alphas = [pixel[3] for pixel in img1.getdata()]
+        img2_alphas = [pixel[3] for pixel in img2.getdata()]
+        equal_alphas = img1_alphas == img2_alphas
+    else:
+        equal_alphas = True
+
+    equal_content = not ImageChops.difference(img1.convert("RGB"), img2.convert("RGB")).getbbox()
+
+    return equal_size and equal_alphas and equal_content
 
 
 class TestBaseImage:
@@ -1306,6 +1323,108 @@ class TestChildImage:
         assert parent_image._get_numpy_image.call_count == 3
 
 
+class TestRegionInImage:
+    @staticmethod
+    @pytest.mark.parametrize(
+        "is_absolute",
+        [True, False],
+    )
+    def test_get_max_point_when_parent_image_has_no_ancestor(is_absolute):
+        image = BaseImage()
+        region = Region(10, 5, 20, 40)
+        subject = RegionInImage(image, region)
+
+        point = subject.get_max_point(is_absolute)
+
+        assert point == Point(30, 45)
+
+    @staticmethod
+    @pytest.mark.parametrize(
+        "grandparent_region, parent_region, is_absolute, expected_point",
+        [
+            (Region(10, 5, 200, 400), Region(20, 10, 30, 22), False, Point(50, 32)),
+            (Region(10, 5, 200, 400), Region(20, 10, 30, 22), True, Point(60, 37)),
+            (Region(10, 5, 200, 400), Region(5, 2, 30, 22), False, Point(35, 24)),
+            (Region(10, 5, 200, 400), Region(5, 2, 30, 22), True, Point(45, 29)),
+        ],
+    )
+    def test_get_max_point_when_parent_image_has_ancestor(
+        grandparent_region, parent_region, is_absolute, expected_point
+    ):
+        grandparent_image = BaseImage()
+        parent_image = RegionInImage(grandparent_image, grandparent_region)
+        subject = RegionInImage(parent_image, parent_region)
+
+        point = subject.get_max_point(is_absolute)
+
+        assert point == expected_point
+
+    @staticmethod
+    def test_max_point_property():
+        image = BaseImage()
+        region = Region(10, 5, 20, 40)
+        subject = RegionInImage(image, region)
+        subject.get_max_point = MagicMock(return_value=Point(7, 13))
+
+        point = subject.max_point
+
+        assert point == Point(7, 13)
+        subject.get_max_point.assert_called_once_with()
+
+    @staticmethod
+    @pytest.mark.parametrize(
+        "region, is_absolute, expected_center",
+        [
+            (Region(10, 5, 20, 40), True, Point(20, 25)),
+            (Region(10, 5, 21, 41), True, Point(20, 25)),
+            (Region(10, 5, 20, 40), False, Point(20, 25)),
+            (Region(10, 5, 21, 41), False, Point(20, 25)),
+        ],
+    )
+    def test_get_center_when_parent_image_has_no_ancestor(region, is_absolute, expected_center):
+        image = BaseImage()
+        subject = RegionInImage(image, region)
+
+        center = subject.get_center(is_absolute)
+
+        assert center == expected_center
+
+    @staticmethod
+    @pytest.mark.parametrize(
+        "grandparent_region, parent_region, is_absolute, expected_center",
+        [
+            (Region(10, 5, 200, 400), Region(20, 10, 30, 22), False, Point(35, 21)),
+            (Region(10, 5, 200, 400), Region(20, 10, 31, 23), False, Point(35, 21)),
+            (Region(10, 5, 200, 400), Region(20, 10, 30, 22), True, Point(45, 26)),
+            (Region(10, 5, 200, 400), Region(20, 10, 31, 23), True, Point(45, 26)),
+            (Region(10, 5, 200, 400), Region(5, 2, 30, 22), False, Point(20, 13)),
+            (Region(10, 5, 200, 400), Region(5, 2, 31, 23), False, Point(20, 13)),
+            (Region(10, 5, 200, 400), Region(5, 2, 30, 22), True, Point(30, 18)),
+            (Region(10, 5, 200, 400), Region(5, 2, 31, 23), True, Point(30, 18)),
+        ],
+    )
+    def test_get_center_when_parent_image_has_ancestor(grandparent_region, parent_region, is_absolute, expected_center):
+        grandparent_image = BaseImage()
+        parent_image = RegionInImage(grandparent_image, grandparent_region)
+        subject = RegionInImage(parent_image, parent_region)
+
+        center = subject.get_center(is_absolute)
+
+        assert center == expected_center
+
+    @staticmethod
+    def test_center_property():
+        image = BaseImage()
+        region = Region(10, 5, 20, 40)
+        subject = RegionInImage(image, region)
+        subject.get_center = MagicMock(return_value=Point(7, 13))
+
+        center = subject.center
+
+        assert center == Point(7, 13)
+        subject.get_center.assert_called_once_with()
+
+
 class TestScreen:
     @staticmethod
     def test_getting_ocr_matcher_for_same_language_creates_it_each_time():
@@ -1376,3 +1495,17 @@ class TestScreen:
 
         # Assert
         assert pyautogui.screenshot.call_count == 1
+
+    @staticmethod
+    def test_saving_screenshot(tmp_path):
+        # Arrange
+        screen = Screen()
+        fake_screenshot = PILImage.open(str(RESOURCES_DIR / "wiki-python-text.png"))
+        pyautogui.screenshot = MagicMock(return_value=fake_screenshot)
+
+        # Act
+        screen.save(tmp_path / "out.png")
+
+        # Assert
+        saved_screenshot = PILImage.open(str(tmp_path / "out.png"))
+        assert are_pil_images_equal(saved_screenshot, fake_screenshot)
