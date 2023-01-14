@@ -876,7 +876,6 @@ class TestBaseImageContains:
         found = needle in any_image
 
         assert found is False
-        any_image.contains_image.assert_called_once_with(needle, timeout=0)
 
     @staticmethod
     def test_in_returns_true_when_needle_image_found_in_image():
@@ -887,7 +886,6 @@ class TestBaseImageContains:
         found = needle in any_image
 
         assert found is True
-        any_image.contains_image.assert_called_once_with(needle, timeout=0)
 
 
 class TestChildImage:

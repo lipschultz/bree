@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Collection, Iterable, List, Mapping, Optional, Tuple, Union
+from typing import Any, Iterable, List, Mapping, Optional, Tuple, Union
 
 import cv2
 import numpy as np
@@ -172,6 +172,9 @@ class BaseImage:
         """
         Find all locations of ``needle`` in the image.
 
+        If all needles have at least one dimension larger than the haystack, then an empty list will be returned
+        because no needle could even fit in the haystack.
+
         :param needle: Image or iterable of images to find.
         :param confidence: Sets the confidence threshold.  If the found image is at least this similar, then it is
             considered a match.  Defaults to 0.99 (99%).  Setting the threshold to 1 (i.e. 100%) may result in false
@@ -181,6 +184,9 @@ class BaseImage:
         """
         if isinstance(needle, BaseImage):
             needle = [needle]
+
+        if all(needle_part.width > self.width or needle_part.height > self.height for needle_part in needle):
+            return []
 
         numpy_image = self._get_numpy_image()
         all_found = []  # type: List[MatchedRegionInImage]
@@ -594,20 +600,16 @@ class BaseImage:
             },
         )
 
-    def contains(self, needle: NeedleType, *args, **kwargs) -> bool:
+    def contains(self, needle: Union[NeedleType, Iterable[NeedleType]], *args, **kwargs) -> bool:
         """
         Determines whether ``needle`` appears in the image.
 
         This is a convenience wrapper around ``contains_image`` and ``contains_text``.  Based on the type for
         ``needle``, the appropriate method will be called.
         """
-        if isinstance(needle, BaseImage):
-            return self.contains_image(needle, *args, **kwargs)
-        if isinstance(needle, str):
-            return self.contains_text(needle, *args, **kwargs)
-        raise TypeError(f"Unsupported needle type: {type(needle)}")
+        return len(self.wait_until_appears(needle, *args, **kwargs)) > 0
 
-    def contains_image(self, needle: Union["BaseImage", Collection["BaseImage"]], *args, **kwargs) -> bool:
+    def contains_image(self, needle: Union["BaseImage", Iterable["BaseImage"]], *args, **kwargs) -> bool:
         """
         Determines whether ``needle`` appears in the image.
 
@@ -616,7 +618,7 @@ class BaseImage:
         """
         return len(self.wait_until_image_appears(needle, *args, **kwargs)) > 0
 
-    def contains_text(self, needle: Union[str, Collection[str]], *args, **kwargs) -> bool:
+    def contains_text(self, needle: Union[str, Iterable[str]], *args, **kwargs) -> bool:
         """
         Determines whether ``needle`` appears in the image.
 
