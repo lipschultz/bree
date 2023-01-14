@@ -11,6 +11,7 @@ from bree.location import Point, Region
 from bree.ocr import OCRMatcher
 
 FileReferenceType = Union[str, Path]
+NeedleType = Union[str, "BaseImage"]
 
 
 class OutOfBoundsError(Exception):
@@ -163,7 +164,7 @@ class BaseImage:
 
     def find_image_all(
         self,
-        needle: Union["BaseImage", Collection["BaseImage"]],
+        needle: Union["BaseImage", Iterable["BaseImage"]],
         confidence: float = 0.99,
         *,
         match_method=cv2.TM_SQDIFF_NORMED,
@@ -171,7 +172,7 @@ class BaseImage:
         """
         Find all locations of ``needle`` in the image.
 
-        :param needle: Image or collection of images to find.
+        :param needle: Image or iterable of images to find.
         :param confidence: Sets the confidence threshold.  If the found image is at least this similar, then it is
             considered a match.  Defaults to 0.99 (99%).  Setting the threshold to 1 (i.e. 100%) may result in false
             negatives (i.e. exact matches not being found).
@@ -194,7 +195,7 @@ class BaseImage:
 
     def find_text_all(
         self,
-        needle: Union[str, Collection[str]],
+        needle: Union[str, Iterable[str]],
         confidence: float = 0.9,
         *,
         regex: bool = False,
@@ -206,7 +207,7 @@ class BaseImage:
         """
         Find all locations of ``needle`` in the image.
 
-        :param needle: Text or collection of text to find.
+        :param needle: Text, regular expression, or iterable of them to find.
         :param confidence: Sets the confidence threshold for the OCR.  If the OCR is at least that confident in the
             text and the text matches the needle, then it is considered a match.  Defaults to 0.9 (90%).  Setting the
             threshold too much higher could result in false negatives (i.e. exact matches not being found) due to
@@ -236,9 +237,7 @@ class BaseImage:
         return all_found
 
     @staticmethod
-    def _group_needles_by_type(
-        needles: Union[str, "BaseImage", Iterable[Union[str, "BaseImage"]]]
-    ) -> Tuple[List[str], List["BaseImage"]]:
+    def _group_needles_by_type(needles: Union[NeedleType, Iterable[NeedleType]]) -> Tuple[List[str], List["BaseImage"]]:
         if isinstance(needles, str):
             text_needles, image_needles = [needles], []
         elif isinstance(needles, BaseImage):
@@ -257,7 +256,7 @@ class BaseImage:
 
     def find_all(
         self,
-        needle: Union[str, "BaseImage", Iterable[Union[str, "BaseImage"]]],
+        needle: Union[NeedleType, Iterable[NeedleType]],
         confidence: Optional[float] = None,
         text_kwargs: Optional[Mapping[str, Any]] = None,
         image_kwargs: Optional[Mapping[str, Any]] = None,
@@ -291,7 +290,7 @@ class BaseImage:
         return text_results + image_results
 
     def find_image(
-        self, needle: Union["BaseImage", Collection["BaseImage"]], confidence: Optional[float] = None, **kwargs
+        self, needle: Union["BaseImage", Iterable["BaseImage"]], confidence: Optional[float] = None, **kwargs
     ) -> Optional["MatchedRegionInImage"]:
         """
         Find the best-matching region in the image.
@@ -299,7 +298,7 @@ class BaseImage:
         This is a convenience wrapper around ``find_image_all`` that takes the result and returns the highest-confidence
         result.
 
-        :param needle: Image or collection of images to find.
+        :param needle: Image or iterable of images to find.
         :param confidence: Confidence threshold to use for identifying matches.
         :param kwargs: Additional keyword arguments to pass to ``find_image_all``.
         :return: The region with the best match to ``needle``.  Ties will be decided arbitrarily.  If no matches are
@@ -313,7 +312,7 @@ class BaseImage:
         return None
 
     def find_text(
-        self, needle: Union[str, Collection[str]], confidence: Optional[float] = None, **kwargs
+        self, needle: Union[str, Iterable[str]], confidence: Optional[float] = None, **kwargs
     ) -> Optional["MatchedRegionInImage"]:
         """
         Find the best-matching region in the image.
@@ -321,7 +320,7 @@ class BaseImage:
         This is a convenience wrapper around ``find_text_all`` that takes the result and returns the highest-confidence
         result.
 
-        :param needle: Text/regex or collection of text/regex to find.
+        :param needle: Text/regex or iterable of text/regex to find.
         :param confidence: Confidence threshold to use for identifying matches.
         :param kwargs: Additional keyword arguments to pass to ``find_text_all``.
         :return: The region with the best match to ``needle``.  Ties will be decided arbitrarily.  If no matches are
@@ -336,7 +335,7 @@ class BaseImage:
 
     def find(
         self,
-        needle: Union[str, "BaseImage", Iterable[Union[str, "BaseImage"]]],
+        needle: Union[NeedleType, Iterable[NeedleType]],
         confidence: Optional[float] = None,
         text_kwargs: Optional[Mapping[str, Any]] = None,
         image_kwargs: Optional[Mapping[str, Any]] = None,
@@ -347,7 +346,7 @@ class BaseImage:
         This is a convenience wrapper around ``find_image`` and ``find_text``.  Based on the type for
         ``needle``, the appropriate method will be called.
 
-        :param needle: Image, text, regular expression, or iterable of any of those types to search for.
+        :param needle: Image, text, regular expression, or iterable of those types to search for.
         :param confidence: Confidence threshold to use for identifying matches.
         :param text_kwargs: Additional arguments to pass along to the `find_text_all` method.
         :param image_kwargs: Additional arguments to pass along to the `find_image_all` method.
@@ -367,7 +366,7 @@ class BaseImage:
 
     def wait_until_appears(
         self,
-        needle: Union[str, "BaseImage", Iterable[Union[str, "BaseImage"]]],
+        needle: Union[NeedleType, Iterable[NeedleType]],
         confidence: Optional[float] = None,
         timeout: float = 5,
         *,
@@ -378,8 +377,8 @@ class BaseImage:
         """
         Pauses execution until the needle appears or it times out.
 
-        :param needle: Image or collection of images to wait for.  If a collection, will wait until any image in the
-            collection appears.
+        :param needle: Text, regular expression, image, or iterable of them to wait for.  If an iterable, will wait
+            until any image in the iterable appears.
         :param confidence: Sets the confidence threshold.  If the found image is at least this similar, then it is
             considered a match.  Defaults to 0.99 (99%).  Setting the threshold to 1 (i.e. 100%) may result in false
             negatives (i.e. exact matches not being found).
@@ -404,7 +403,7 @@ class BaseImage:
 
     def wait_until_image_appears(
         self,
-        needle: Union["BaseImage", Collection["BaseImage"]],
+        needle: Union["BaseImage", Iterable["BaseImage"]],
         confidence: float = 0.99,
         timeout: float = 5,
         *,
@@ -414,7 +413,7 @@ class BaseImage:
         """
         Pauses execution until the needle appears or it times out.
 
-        :param needle: Text, regular expression, image, or collection of them to wait for.  If a collection, will wait
+        :param needle: Text, regular expression, image, or iterable of them to wait for.  If an iterable, will wait
             until any in the collection appears.
         :param confidence: Sets the confidence threshold.  If the found image is at least this similar, then it is
             considered a match.  Defaults to 0.99 (99%).  Setting the threshold to 1 (i.e. 100%) may result in false
@@ -435,7 +434,7 @@ class BaseImage:
 
     def wait_until_text_appears(
         self,
-        needle: Union[str, Collection[str]],
+        needle: Union[str, Iterable[str]],
         confidence: float = 0.9,
         timeout: float = 5,
         *,
@@ -449,8 +448,8 @@ class BaseImage:
         """
         Pauses execution until the needle appears or it times out.
 
-        :param needle: Text or regular expression, or collection of them to wait for.  If a collection, will wait until
-            any in the collection appears.
+        :param needle: Text or regular expression, or iterable of them to wait for.  If an iterable, will wait until
+            any of them appears.
         :param confidence: Sets the confidence threshold for the OCR.  If the OCR is at least that confident in the
             text and the text matches the needle, then it is considered a match.  Defaults to 0.9 (90%).  Setting the
             threshold too much higher could result in false negatives (i.e. exact matches not being found) due to
@@ -482,7 +481,7 @@ class BaseImage:
 
     def wait_until_vanishes(
         self,
-        needle: Union[str, "BaseImage", Iterable[Union[str, "BaseImage"]]],
+        needle: Union[NeedleType, Iterable[NeedleType]],
         confidence: Optional[float] = None,
         timeout: float = 5,
         *,
@@ -493,9 +492,9 @@ class BaseImage:
         """
         Pauses execution until the needle vanishes or it times out.
 
-        :param needle: Image or collection of images to wait for.  If a collection, will wait until any image in the
-            collection vanishes.
-        :param confidence: Sets the confidence threshold.  If the found image is at least this similar, then it is
+        :param needle: Text, regular expression, image or iterable of those types to wait for.  If an iterable, will
+            wait until any image in the iterable vanishes.
+        :param confidence: Sets the confidence threshold.  If the found needle is at least this similar, then it is
             considered a match.  Defaults to 0.99 (99%).  Setting the threshold to 1 (i.e. 100%) may result in false
             negatives (i.e. exact matches not being found).
         :param timeout: Wait up to ``timeout`` seconds before giving up waiting.
@@ -517,7 +516,7 @@ class BaseImage:
 
     def wait_until_image_vanishes(
         self,
-        needle: Union["BaseImage", Collection["BaseImage"]],
+        needle: Union["BaseImage", Iterable["BaseImage"]],
         confidence: float = 0.9,
         timeout: float = 5,
         *,
@@ -527,8 +526,8 @@ class BaseImage:
         """
         Pauses execution until the needle vanishes or it times out.
 
-        :param needle: Image or collection of images to wait for.  If a collection, will wait until any needle in the
-            collection is no longer in the image.
+        :param needle: Image or iterable of images to wait for.  If an iterable, will wait until any needle in the
+            iterable is no longer in the image.
         :param confidence: Sets the confidence threshold.  If the found image is at least this similar, then it is
             considered a match.  Defaults to 0.99 (99%).  Setting the threshold to 1 (i.e. 100%) may result in false
             negatives (i.e. exact matches not being found).
@@ -547,7 +546,7 @@ class BaseImage:
 
     def wait_until_text_vanishes(
         self,
-        needle: Union[str, Collection[str]],
+        needle: Union[str, Iterable[str]],
         confidence: float = 0.99,
         timeout: float = 5,
         *,
@@ -561,8 +560,8 @@ class BaseImage:
         """
         Pauses execution until the needle vanishes or it times out.
 
-        :param needle: Text or regular expression, or collection of them to wait for.  If a collection, will wait until
-            any in the collection is no longer in the image.
+        :param needle: Text or regular expression, or iterable of them to wait for.  If an iterable, will wait until
+            any in the iterable is no longer in the image.
         :param confidence: Sets the confidence threshold for the OCR.  If the OCR is at least that confident in the
             text and the text matches the needle, then it is considered a match.  Defaults to 0.9 (90%).  Setting the
             threshold too much higher could result in false negatives (i.e. exact matches not being found) due to
@@ -591,7 +590,7 @@ class BaseImage:
             },
         )
 
-    def contains(self, needle: Union[str, "BaseImage"], *args, **kwargs) -> bool:
+    def contains(self, needle: NeedleType, *args, **kwargs) -> bool:
         """
         Determines whether ``needle`` appears in the image.
 
@@ -622,7 +621,7 @@ class BaseImage:
         """
         return len(self.wait_until_text_appears(needle, *args, **kwargs)) > 0
 
-    def __contains__(self, needle: Union[str, "BaseImage"]) -> bool:
+    def __contains__(self, needle: NeedleType) -> bool:
         """
         Determines whether ``needle`` appears in the image.
 
