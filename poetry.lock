@@ -79,6 +79,14 @@ optional = false
 python-versions = "*"
 
 [[package]]
+name = "EasyProcess"
+version = "1.1"
+description = "Easy to use Python subprocess interface."
+category = "dev"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "exceptiongroup"
 version = "1.1.0"
 description = "Backport of PEP 654 (exception groups)"
@@ -2439,6 +2447,14 @@ optional = false
 python-versions = "*"
 
 [[package]]
+name = "PyVirtualDisplay"
+version = "3.0"
+description = "python wrapper for Xvfb, Xephyr and Xvnc"
+category = "dev"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "PyYAML"
 version = "6.0"
 description = "YAML parser and emitter for Python"
@@ -2532,7 +2548,7 @@ testing = ["coverage (>=6.2)", "coverage-enable-subprocess (>=1)", "flaky (>=3.7
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "7e553f2dddfcbdb82c78fa64cced871c9e366deee31d3a4260e41bab5ad8880a"
+content-hash = "428d6a965e5c2df57a4fcaaf57f9512b636e358249c53a52f08cc942365e2af6"
 
 [metadata.files]
 attrs = [
@@ -2678,6 +2694,10 @@ cycler = [
 distlib = [
     {file = "distlib-0.3.6-py2.py3-none-any.whl", hash = "sha256:f35c4b692542ca110de7ef0bea44d73981caeb34ca0b9b6b2e6d7790dda8f80e"},
     {file = "distlib-0.3.6.tar.gz", hash = "sha256:14bad2d9b04d3a36127ac97f30b12a19268f211063d8f8ee4f47108896e11b46"},
+]
+EasyProcess = [
+    {file = "EasyProcess-1.1-py3-none-any.whl", hash = "sha256:82eed523a0a5eb12a81fa4eacd9f342caeb3f900eb4b798740e6696ad07e63f9"},
+    {file = "EasyProcess-1.1.tar.gz", hash = "sha256:885898302a57aab948973e8b5d32a4229392b9fb2d986ab1d4ffd590e5ba90ec"},
 ]
 exceptiongroup = [
     {file = "exceptiongroup-1.1.0-py3-none-any.whl", hash = "sha256:327cbda3da756e2de031a3107b81ab7b3770a602c4d16ca618298c526f4bec1e"},
@@ -3865,6 +3885,10 @@ pytweening = [
 pytz = [
     {file = "pytz-2022.7-py2.py3-none-any.whl", hash = "sha256:93007def75ae22f7cd991c84e02d434876818661f8df9ad5df9e950ff4e52cfd"},
     {file = "pytz-2022.7.tar.gz", hash = "sha256:7ccfae7b4b2c067464a6733c6261673fdb8fd1be905460396b97a073e9fa683a"},
+]
+PyVirtualDisplay = [
+    {file = "PyVirtualDisplay-3.0-py3-none-any.whl", hash = "sha256:40d4b8dfe4b8de8552e28eb367647f311f88a130bf837fe910e7f180d5477f0e"},
+    {file = "PyVirtualDisplay-3.0.tar.gz", hash = "sha256:09755bc3ceb6eb725fb07eca5425f43f2358d3bf08e00d2a9b792a1aedd16159"},
 ]
 PyYAML = [
     {file = "PyYAML-6.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:d4db7c7aef085872ef65a8fd7d6d09a14ae91f691dec3e87ee5ee0539d516f53"},
