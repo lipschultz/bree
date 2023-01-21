@@ -3,6 +3,7 @@ from collections import namedtuple
 from typing import List, Optional, Tuple
 
 import numpy as np
+import pandas as pd
 import pytesseract
 
 from bree.location import Region
@@ -22,7 +23,7 @@ class OCRMatcher:
 
         self._language = language
 
-        self._df = None
+        self._df: Optional[pd.DataFrame] = None
         self.process(line_break, paragraph_break)
 
     @property
