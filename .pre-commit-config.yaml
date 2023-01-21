@@ -33,7 +33,7 @@ repos:
     rev: v2.14.5
     hooks:
       - id: pylint
-        args: [--fail-under=5]
+        args: [--fail-under=7]
         verbose: true
 #  - repo: https://github.com/pre-commit/mirrors-mypy
 #    rev: v0.942
