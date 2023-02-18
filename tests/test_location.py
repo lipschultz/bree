@@ -1,8 +1,13 @@
 import math
 
 import pytest
+from hypothesis import given
+from hypothesis import strategies as st
 
 from bree.location import Point, Region
+
+coordinate_strategy = st.floats(min_value=0, max_value=32_000)
+point_tuple_strategy = st.tuples(coordinate_strategy, coordinate_strategy)
 
 
 class TestPoint:
@@ -37,6 +42,19 @@ class TestPoint:
         distance = point1.distance_to(point2)
 
         assert distance == math.sqrt((100 - 11) ** 2)
+
+    @staticmethod
+    @given(point_tuple_strategy, point_tuple_strategy)
+    def test_distance_between_points(point1_tuple, point2_tuple):
+        point1 = Point.from_tuple(point1_tuple)
+        point2 = Point.from_tuple(point2_tuple)
+
+        distance = point1.distance_to(point2)
+        distance_reverse = point2.distance_to(point1)
+
+        assert distance == distance_reverse
+        assert distance >= 0
+        assert distance == pytest.approx(math.dist(point1_tuple, point2_tuple))
 
 
 class TestRegion:
