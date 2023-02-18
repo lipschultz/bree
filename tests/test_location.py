@@ -1,6 +1,42 @@
+import math
+
 import pytest
 
 from bree.location import Point, Region
+
+
+class TestPoint:
+    @staticmethod
+    def test_point_from_tuple():
+        point = Point.from_tuple((13, 11))
+
+        assert point == Point(13, 11)
+
+    @staticmethod
+    def test_distance_to_same_point_is_zero():
+        point = Point(13, 11)
+
+        distance = point.distance_to(point)
+
+        assert distance == 0
+
+    @staticmethod
+    def test_distance_to_point_with_same_y():
+        point1 = Point(13, 11)
+        point2 = Point(100, 11)
+
+        distance = point1.distance_to(point2)
+
+        assert distance == math.sqrt((100 - 13) ** 2)
+
+    @staticmethod
+    def test_distance_to_point_with_same_x():
+        point1 = Point(13, 11)
+        point2 = Point(13, 100)
+
+        distance = point1.distance_to(point2)
+
+        assert distance == math.sqrt((100 - 11) ** 2)
 
 
 class TestRegion:

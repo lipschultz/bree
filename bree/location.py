@@ -1,6 +1,6 @@
 import math
 from dataclasses import dataclass
-from typing import Tuple, Union
+from typing import Literal, Tuple, Union
 
 
 @dataclass(frozen=True)
@@ -75,7 +75,7 @@ class Region:
     def center(self) -> Point:
         return Point((self.right + self.left) // 2, (self.bottom + self.top) // 2)
 
-    def contains(self, item: "LocationType", overlap="all") -> bool:
+    def contains(self, item: "LocationType", overlap: Literal["all", "any"] = "all") -> bool:
         if isinstance(item, Point):
             return (self.left <= item.x <= self.right) and (self.top <= item.y <= self.bottom)
         if isinstance(item, Region):
