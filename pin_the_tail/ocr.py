@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pytesseract
 
-from bree.location import Region
+from pin_the_tail.location import Region
 
 OCRMatch = namedtuple("OCRMatch", ["index_start", "index_end", "region", "confidence"])
 

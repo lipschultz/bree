@@ -7,8 +7,8 @@ import pyautogui
 from PIL import Image as PILImage
 from PIL import ImageDraw
 
-from bree.location import Point, Region
-from bree.ocr import OCRMatcher
+from pin_the_tail.location import Point, Region
+from pin_the_tail.ocr import OCRMatcher
 
 FileReferenceType = Union[str, Path]
 NeedleType = Union[str, "BaseImage"]

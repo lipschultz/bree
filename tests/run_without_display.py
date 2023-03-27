@@ -12,7 +12,7 @@ with Display(visible=False, size=(100, 60), use_xauth=True) as display:
             "--durations=5",
             "--durations-min=0.04",
             "--cov-branch",
-            "--cov=bree/",
+            "--cov=pin_the_tail/",
             "--cov-report",
             "term-missing:skip-covered",
         ]

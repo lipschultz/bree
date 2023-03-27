@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "bree"
+name = "pin-the-tail"
 version = "0.1.0"
 description = "Object-oriented keyboard, mouse, and screen control"
 authors = ["Michael Lipschultz <michael.lipschultz@gmail.com>"]

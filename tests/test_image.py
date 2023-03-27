@@ -8,9 +8,9 @@ import pytest
 from PIL import Image as PILImage
 from PIL import ImageChops
 
-from bree.image import BaseImage, Image, MatchedRegionInImage, OutOfBoundsError, RegionInImage, Screen
-from bree.location import Point, Region
-from bree.ocr import OCRMatch
+from pin_the_tail.image import BaseImage, Image, MatchedRegionInImage, OutOfBoundsError, RegionInImage, Screen
+from pin_the_tail.location import Point, Region
+from pin_the_tail.ocr import OCRMatch
 
 RESOURCES_DIR = Path(__file__).parent / "resources"
 
@@ -666,7 +666,7 @@ class TestBaseImageWaitUntilAppears:
         needle1 = "text"
         needle2 = BaseImage()
 
-        with mock.patch("bree.image.pyautogui.sleep", return_value=None, new_callable=MagicMock) as sleep_patch:
+        with mock.patch("pin_the_tail.image.pyautogui.sleep", return_value=None, new_callable=MagicMock) as sleep_patch:
             found = subject.wait_until_appears(
                 [needle1, needle2], 0.8, 10, scans_per_second=20, image_kwargs={"match_method": "ANY-METHOD"}
             )
@@ -686,7 +686,7 @@ class TestBaseImageWaitUntilAppears:
         needle2 = Image(RESOURCES_DIR / "the.png")
         subject.find_all = MagicMock(return_value=[MatchedRegionInImage(subject, Region(0, 0, 1, 1), needle2, 1.0)])
 
-        with mock.patch("bree.image.pyautogui.sleep", return_value=None, new_callable=MagicMock) as sleep_patch:
+        with mock.patch("pin_the_tail.image.pyautogui.sleep", return_value=None, new_callable=MagicMock) as sleep_patch:
             found = subject.wait_until_appears([needle1, needle2], 0.8, 10, scans_per_second=20)
 
             assert found == [MatchedRegionInImage(subject, Region(0, 0, 1, 1), needle2, 1.0)]
@@ -707,7 +707,7 @@ class TestBaseImageWaitUntilAppears:
             ]
         )
 
-        with mock.patch("bree.image.pyautogui.sleep", return_value=None, new_callable=MagicMock) as sleep_patch:
+        with mock.patch("pin_the_tail.image.pyautogui.sleep", return_value=None, new_callable=MagicMock) as sleep_patch:
             found = subject.wait_until_appears([needle1, needle2], 0.8, 10, scans_per_second=20)
 
             assert found == [MatchedRegionInImage(subject, Region(0, 0, 1, 1), needle1, 1.0)]
@@ -722,7 +722,7 @@ class TestBaseImageWaitUntilAppears:
         needle2 = Image(RESOURCES_DIR / "the.png")
         subject.find_all = MagicMock(return_value=[])
 
-        with mock.patch("bree.image.pyautogui.sleep", return_value=None, new_callable=MagicMock) as sleep_patch:
+        with mock.patch("pin_the_tail.image.pyautogui.sleep", return_value=None, new_callable=MagicMock) as sleep_patch:
             found = subject.wait_until_appears([needle1, needle2], 0.8, 0, scans_per_second=20)
 
             assert found == []
@@ -790,7 +790,7 @@ class TestBaseImageWaitUntilVanishes:
         needle1 = "text"
         needle2 = BaseImage()
 
-        with mock.patch("bree.image.pyautogui.sleep", return_value=None, new_callable=MagicMock) as sleep_patch:
+        with mock.patch("pin_the_tail.image.pyautogui.sleep", return_value=None, new_callable=MagicMock) as sleep_patch:
             result = subject.wait_until_vanishes(
                 [needle1, needle2], 0.8, 10, scans_per_second=20, image_kwargs={"match_method": "ANY-METHOD"}
             )
@@ -810,7 +810,7 @@ class TestBaseImageWaitUntilVanishes:
         )
         subject.find_text_all = MagicMock(return_value=[])
 
-        with mock.patch("bree.image.pyautogui.sleep", return_value=None, new_callable=MagicMock) as sleep_patch:
+        with mock.patch("pin_the_tail.image.pyautogui.sleep", return_value=None, new_callable=MagicMock) as sleep_patch:
             result = subject.wait_until_vanishes(
                 [needle1, needle2], 0.8, 10, scans_per_second=20, image_kwargs={"match_method": "ANY-METHOD"}
             )
@@ -835,7 +835,7 @@ class TestBaseImageWaitUntilVanishes:
             ]
         )
 
-        with mock.patch("bree.image.pyautogui.sleep", return_value=None, new_callable=MagicMock) as sleep_patch:
+        with mock.patch("pin_the_tail.image.pyautogui.sleep", return_value=None, new_callable=MagicMock) as sleep_patch:
             vanished = any_image.wait_until_vanishes(needle, 0.8, 10, scans_per_second=20)
 
             assert vanished is True
@@ -850,7 +850,7 @@ class TestBaseImageWaitUntilVanishes:
         needle = "text"
         any_image.find_all = MagicMock(return_value=[MatchedRegionInImage(any_image, Region(0, 0, 1, 1), needle, 1.0)])
 
-        with mock.patch("bree.image.pyautogui.sleep", return_value=None, new_callable=MagicMock) as sleep_patch:
+        with mock.patch("pin_the_tail.image.pyautogui.sleep", return_value=None, new_callable=MagicMock) as sleep_patch:
             vanished = any_image.wait_until_vanishes(needle, 0.8, 0, scans_per_second=20)
 
             assert vanished is False

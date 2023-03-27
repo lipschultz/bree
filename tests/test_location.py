@@ -4,7 +4,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from bree.location import Point, Region
+from pin_the_tail.location import Point, Region
 
 coordinate_strategy = st.floats(min_value=0, max_value=32_000)
 point_tuple_strategy = st.tuples(coordinate_strategy, coordinate_strategy)

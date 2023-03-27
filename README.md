@@ -1,11 +1,11 @@
-# Bree
+# Pin the Tail
 
 A library for automating looking at the screen:
 
 * Use image recognition to find objects on the screen
 * Use optical character recognition (OCR) to find or extract text
 
-Bree is like [SikuliX](https://github.com/RaiMan/SikuliX1), except:
+Pin the Tail is like [SikuliX](https://github.com/RaiMan/SikuliX1), except:
 
 1. it doesn't rely on Jython
 2. it doesn't provide a friendly IDE for developing scripts
@@ -32,7 +32,7 @@ The `Screen` class provides access to the screen.
 You can use the `screenshot` method to take a picture of the screen -- it returns an `Image` object (see next section).
 
 ```python
-from bree.image import Screen
+from pin_the_tail.image import Screen
 
 screen = Screen()
 current_screenshot = screen.screenshot()
@@ -58,7 +58,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image as PILImage
 
-from bree.image import Image
+from pin_the_tail.image import Image
 
 image_from_file = Image("tests/resources/the.png")
 image_from_path = Image(Path("tests/resources/the.png"))
@@ -71,7 +71,7 @@ iamge_from_numpy = Image(np.asarray(PILImage.open("tests/resources/the.png")))
 The `Screen` and `Image` classes provide the ability to extract text using the `get_text` method, e.g.:
 
 ```python
-from bree.image import Image
+from pin_the_tail.image import Image
 
 wiki_img = Image("tests/resources/wiki-python-text.png")
 text = wiki_img.get_text()
@@ -125,7 +125,7 @@ Finding "the" in an image:
 ```python
 from pprint import pprint
 
-from bree.image import Image
+from pin_the_tail.image import Image
 
 wiki_img = Image("tests/resources/wiki-python-text.png")
 the_img = Image("tests/resources/the.png")
@@ -151,7 +151,7 @@ Sometimes you will want to see the image you're working with.
 To do so, `Screen` and `Image` provide a `show` method that will open a window to show the image, e.g.:
 
 ```python
-from bree.image import Image
+from pin_the_tail.image import Image
 
 wiki_img = Image("tests/resources/wiki-python-text.png")
 wiki_img.show()
@@ -166,7 +166,7 @@ in the image (e.g. the results of one of the find methods mentioned above).  It 
 For example:
 
 ```python
-from bree.image import Image
+from pin_the_tail.image import Image
 
 wiki_img = Image("tests/resources/wiki-python-text.png")
 locations_of_the_text = wiki_img.find_text_all("the")
@@ -183,13 +183,15 @@ To select just a region within an image (e.g. a `Screen` or `Image` object), use
 returns a `RegionInImage` object.
 
 ```python
-from bree.image import Image
-from bree.location import Region
+from pin_the_tail.image import Image
+from pin_the_tail.location import Region
 
 wiki_img = Image("tests/resources/wiki-python-text.png")
 print("Complete image dimensions:", wiki_img.region)
 
-bottom_half = wiki_img.get_child_region(Region.from_coordinates(0, wiki_img.height // 2, wiki_img.width, wiki_img.height))
+bottom_half = wiki_img.get_child_region(
+    Region.from_coordinates(0, wiki_img.height // 2, wiki_img.width, wiki_img.height)
+)
 print("Just the bottom half:", bottom_half.region)
 ```
 
@@ -203,11 +205,13 @@ Just the bottom half: Region(x=0, y=700, width=1312, height=116)
 Selecting regions within the screen or an image is perhaps most useful when performing OCR or using the find methods, e.g.:
 
 ```python
-from bree.image import Image
-from bree.location import Region
+from pin_the_tail.image import Image
+from pin_the_tail.location import Region
 
 wiki_img = Image("tests/resources/wiki-python-text.png")
-bottom_half = wiki_img.get_child_region(Region.from_coordinates(0, wiki_img.height // 2, wiki_img.width, wiki_img.height))
+bottom_half = wiki_img.get_child_region(
+    Region.from_coordinates(0, wiki_img.height // 2, wiki_img.width, wiki_img.height)
+)
 text = bottom_half.get_text()
 print(text[:100])
 ```
@@ -235,7 +239,7 @@ unlike `Image` objects, `Screen` objects can change over time.
 An example:
 
 ```python
-from bree.image import Screen
+from pin_the_tail.image import Screen
 
 screen = Screen()
 locations_of_the = screen.wait_until_text_appears("the")
