@@ -38,3 +38,6 @@ max-line-length = 120
 
 [tool.pylint.basic]
 good-names = ["fp", "i", "x", "y"]
+
+[tool.bandit]
+exclude_dirs = ["tests", ".venv"]

@@ -365,7 +365,7 @@ class BaseImage:
         """
         result = self.find_all(
             needle,
-            *([confidence] if confidence is not None else []),
+            confidence,
             text_kwargs=text_kwargs,
             image_kwargs=image_kwargs,
         )

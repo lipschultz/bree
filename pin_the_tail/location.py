@@ -79,7 +79,7 @@ class Region:
         if isinstance(item, Point):
             return (self.left <= item.x <= self.right) and (self.top <= item.y <= self.bottom)
         if isinstance(item, Region):
-            overlap = overlap.lower()
+            overlap = overlap.lower()  # type: ignore
             if overlap == "all":
                 return item.min_point in self and item.max_point in self
             if overlap == "any":
