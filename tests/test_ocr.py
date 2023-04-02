@@ -15,7 +15,11 @@ RESOURCES_DIR = Path(__file__).parent / "resources"
 
 
 ANY_IMAGE_FILEPATH = RESOURCES_DIR / "wiki-python-text.png"
-ANY_IMAGE_TEXT = "Python (programming language)\n\n \n\nFrom Wikipedia, the free encyclopedia\n(Redirected from Python (Programming Language))"
+ANY_IMAGE_TEXT = (
+    "Python (programming language)\n\n "
+    "\n\nFrom Wikipedia, the free encyclopedia\n"
+    "(Redirected from Python (Programming Language))"
+)
 ANY_IMAGE_RAW_TESSERACT_OUTPUT = pd.DataFrame(
     [
         {
