@@ -42,3 +42,6 @@ good-names = ["fp", "i", "x", "y"]
 
 [tool.bandit]
 exclude_dirs = ["tests", ".venv"]
+
+[tool.ruff]
+line-length = 120

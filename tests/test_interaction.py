@@ -567,7 +567,7 @@ class TestKeysToPressWriting:
 
         # Act
         with mock.patch("pin_the_tail.interaction.pyautogui.write") as write_patch:
-            with mock.patch("pin_the_tail.interaction.pyautogui.press") as press_patch:
+            with mock.patch("pin_the_tail.interaction.pyautogui.press"):
                 with mock.patch("pin_the_tail.interaction.pyautogui.sleep") as sleep_patch:
                     subject.write(16)
 

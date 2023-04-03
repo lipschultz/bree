@@ -22,7 +22,7 @@ class SpecialKey(enum.Enum):
     CAPSLOCK = "capslock"
     ESCAPE = "escape"
 
-    def __add__(self, other) -> "KeysToPress[KeyType]":
+    def __add__(self, other) -> "KeysToPress":
         if isinstance(other, (str, SpecialKey)):
             return KeysToPress([self, other])
 
@@ -36,7 +36,7 @@ class SpecialKey(enum.Enum):
 
         return NotImplemented
 
-    def __radd__(self, other) -> "KeysToPress[KeyType]":
+    def __radd__(self, other) -> "KeysToPress":
         if isinstance(other, (str, SpecialKey)):
             return KeysToPress([other, self])
 
@@ -69,7 +69,7 @@ class SpecialKey(enum.Enum):
 
 
 # Typing a subclass of list: https://stackoverflow.com/questions/54913988/python-typing-for-a-subclass-of-list
-class KeysToPress(list):
+class KeysToPress(list[KeyType]):
     def __init__(self, items: Iterable[KeyType] = ()):
         super().__init__()
         self.extend(items)
@@ -91,19 +91,19 @@ class KeysToPress(list):
             items_to_extend = [self._validate_value(item) for item in items]
             super().extend(items_to_extend)
 
-    def __getitem__(self, item: SupportsIndex) -> Union[KeyType, "KeysToPress[KeyType]"]:
+    def __getitem__(self, item: Union[SupportsIndex, slice]) -> Union[KeyType, "KeysToPress"]:
         retval = super().__getitem__(item)
         if isinstance(item, slice):
             return self.__class__(retval)
         return retval
 
-    def __setitem__(self, index: SupportsIndex, item: KeyType) -> None:
+    def __setitem__(self, index: Union[SupportsIndex, slice], item: KeyType) -> None:
         super().__setitem__(index, self._validate_value(item))
 
     def insert(self, index: SupportsIndex, item: KeyType) -> None:
         super().insert(index, self._validate_value(item))
 
-    def __add__(self, other) -> "KeysToPress[KeyType]":
+    def __add__(self, other: Iterable[KeyType]) -> "KeysToPress":
         try:
             iter(other)
         except TypeError:
@@ -113,7 +113,7 @@ class KeysToPress(list):
             retval.extend(other)
             return retval
 
-    def __radd__(self, other) -> "KeysToPress[KeyType]":
+    def __radd__(self, other) -> "KeysToPress":
         try:
             iter(other)
         except TypeError:
@@ -123,7 +123,7 @@ class KeysToPress(list):
             retval.extend(self)
             return retval
 
-    def __iadd__(self, other) -> "KeysToPress[KeyType]":
+    def __iadd__(self, other: Iterable[KeyType]) -> "KeysToPress":
         try:
             iter(other)
         except TypeError:
@@ -161,7 +161,7 @@ class KeysToPress(list):
         If any element is a string with multiple characters, then each individual character will be held down.  If a
         character appears more than once (e.g. "e" in "meet"), it will only be held down once.
         """
-        unique_keys = set()
+        unique_keys = set()  # type: set[Union[str, SpecialKey]]
         for item in self:
             if isinstance(item, str):
                 unique_keys.update(item)
@@ -181,7 +181,7 @@ class KeysToPress(list):
         character appears more than once (e.g. "e" in "meet"), it will only be released once (because it's only being
         held down once).
         """
-        unique_keys = set()
+        unique_keys = set()  # type: set[Union[str, SpecialKey]]
         for item in self:
             if isinstance(item, str):
                 unique_keys.update(item)
@@ -289,7 +289,7 @@ class Keyboard:
         """
         self.default_typing_speed = default_typing_speed
 
-    def write(self, keys: Union[KeyType, KeysToPress[KeyType]], typing_speed: Optional[NumberType] = None) -> None:
+    def write(self, keys: Union[KeyType, KeysToPress], typing_speed: Optional[NumberType] = None) -> None:
         """
         Type the specified keys at a given characters per second.
 
