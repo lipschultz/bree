@@ -1,3 +1,5 @@
+# pylint: disable=too-few-public-methods,too-many-public-methods
+
 from unittest import mock
 from unittest.mock import call
 
