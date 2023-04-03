@@ -69,7 +69,7 @@ class SpecialKey(enum.Enum):
 
 
 # Typing a subclass of list: https://stackoverflow.com/questions/54913988/python-typing-for-a-subclass-of-list
-class KeysToPress(list[KeyType]):
+class KeysToPress(list):
     def __init__(self, items: Iterable[KeyType] = ()):
         super().__init__()
         self.extend(items)

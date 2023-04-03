@@ -84,7 +84,7 @@ class TestSpecialKey:
         # Arrange
         with mock.patch("pin_the_tail.interaction.pyautogui.press") as press_patch:
             # Act
-            interaction.SpecialKey.ESCAPE.write()
+            interaction.SpecialKey.ESCAPE.write()  # pylint: disable=no-member
 
             # Assert
             press_patch.assert_called_once_with("escape")
