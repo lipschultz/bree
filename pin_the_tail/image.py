@@ -18,6 +18,15 @@ class OutOfBoundsError(Exception):
     pass
 
 
+class NeedleNotFoundError(Exception):
+    def __init__(self, needle: NeedleType, image: Optional["BaseImage"] = None):
+        self.needle = needle
+        self.image = image
+
+        message = f"Cannot find {needle}" + ("" if image is None else f" in image {image}") + "."
+        super().__init__(message)
+
+
 def _find_all_within(
     needle: np.ndarray, haystack: np.ndarray, match_threshold: float = 1.0, *, match_method=cv2.TM_SQDIFF_NORMED
 ) -> Iterable[Tuple[Region, float]]:

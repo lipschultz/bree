@@ -25,6 +25,7 @@ hypothesis = "^6.68.2"
 black = "^23.3.0"
 pylint = "^2.17.2"
 bandit = "^1.7.5"
+pytest-mock = "^3.10.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

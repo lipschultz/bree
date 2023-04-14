@@ -1,14 +1,28 @@
 import enum
 from contextlib import contextmanager
-from typing import Iterable, Optional, SupportsIndex, Union
+from typing import Iterable, Optional, SupportsIndex, Tuple, Union
 
 import pyautogui
 
-from pin_the_tail.image import NeedleType, Screen
+from pin_the_tail.image import NeedleNotFoundError, NeedleType, Screen
 from pin_the_tail.location import Point
 
 NumberType = Union[int, float]
 KeyType = Union[str, "SpecialKey"]
+
+
+def is_iterable(obj, str_is_iterable=False, bytes_is_iterable=False):
+    if isinstance(obj, str):
+        return str_is_iterable
+
+    if isinstance(obj, bytes):
+        return bytes_is_iterable
+
+    try:
+        iter(obj)
+        return True
+    except TypeError:
+        return False
 
 
 class MouseButton(enum.Enum):
@@ -210,33 +224,50 @@ class KeysToPress(list):
 
 class Mouse:
     def __init__(self, default_move_speed: int = 244, screen_reference: Optional[Screen] = None):
+        """
+
+        Args:
+            default_move_speed: pixels per second
+            screen_reference:
+        """
         self.default_move_speed = default_move_speed
         self.screen = screen_reference or Screen()
 
     @property
     def current_location(self) -> Point:
+        """Return the current location of the mouse."""
         return Point.from_tuple(pyautogui.position())
 
     def move_to(
         self,
-        location: Union[Point, NeedleType, Iterable[NeedleType]],
+        location: Union[Tuple[int, int], Point, NeedleType, Iterable[NeedleType]],
         *,
         speed: Optional[int] = None,
         duration: Optional[NumberType] = None,
     ) -> None:
+        """
+        Move the mouse to the specified location.
+
+        ``location`` can be a specific location on the screen or a needle to search for on the screen.
+
+        Raises ``NeedleNotFoundError`` if the location is a needle and cannot be found on the screen.
+        """
         if speed is not None and duration is not None:
             raise ValueError(
                 f"No more than one of `speed` and `duration` may be `None`.  Received: {speed=}, {duration=}"
             )
 
+        if isinstance(location, tuple):
+            location = Point.from_tuple(location)
+        elif not isinstance(location, Point):
+            region = self.screen.find(location)
+            if region is None:
+                raise NeedleNotFoundError(location, self.screen)
+            location = region.center
+
         if duration is None:
             speed = speed or self.default_move_speed
             duration = self.current_location.distance_to(location) / speed
-
-        if not isinstance(location, Point):
-            region = self.screen.find(location)
-            if region is not None:
-                location = region.center
 
         pyautogui.moveTo(location.x, location.y, duration)
 
@@ -289,7 +320,7 @@ class Keyboard:
         """
         self.default_typing_speed = default_typing_speed
 
-    def write(self, keys: Union[KeyType, KeysToPress], typing_speed: Optional[NumberType] = None) -> None:
+    def write(self, keys: Union[KeyType, Iterable[KeyType]], typing_speed: Optional[NumberType] = None) -> None:
         """
         Type the specified keys at a given characters per second.
 
@@ -302,8 +333,14 @@ class Keyboard:
 
         This is a blocking call.
         """
-        if isinstance(keys, KeyType):
-            keys = KeysToPress([keys])
+        if isinstance(keys, (str, SpecialKey)):
+            keys = [keys]
+
+        if not isinstance(keys, KeysToPress):
+            if is_iterable(keys):
+                keys = KeysToPress(keys)
+            else:
+                raise TypeError(f"Unsupported type for keys; received {keys!r} (type={type(keys)})")
 
         if typing_speed is None:
             typing_speed = self.default_typing_speed

@@ -3,9 +3,12 @@
 from unittest import mock
 from unittest.mock import call
 
+import pyautogui
 import pytest
 
 from pin_the_tail import interaction
+from pin_the_tail.image import BaseImage, NeedleNotFoundError, Screen
+from pin_the_tail.location import Point, Region
 
 
 class TestSpecialKey:
@@ -790,3 +793,167 @@ class TestKeysToPressHold:
 
         subject.press.assert_called_once_with()
         subject.release.assert_called_once_with()
+
+
+class TestKeyboard:
+    @staticmethod
+    def test_constructor_sets_default_typing_speed():
+        # Act
+        subject = interaction.Keyboard(15)
+
+        # Assert
+        assert subject.default_typing_speed == 15
+
+
+class TestMouse:
+    @staticmethod
+    def test_constructor_sets_arguments():
+        # Arrange
+        mock_screen = mock.MagicMock()
+
+        # Act
+        subject = interaction.Mouse(17, mock_screen)
+
+        # Assert
+        assert subject.default_move_speed == 17
+        assert subject.screen is mock_screen
+
+    @staticmethod
+    def test_constructor_creates_screen_instance_when_none_provided():
+        # Act
+        subject = interaction.Mouse(screen_reference=None)
+
+        # Assert
+        assert isinstance(subject.screen, Screen)
+
+    @staticmethod
+    def test_current_location_returns_location_of_mouse():
+        # Arrange
+        subject = interaction.Mouse()
+
+        # Act
+        with mock.patch(
+            "pin_the_tail.image.pyautogui.position", return_value=pyautogui.Point(17, 19)
+        ) as position_patch:
+            actual_location = subject.current_location
+
+        # Assert
+        position_patch.assert_called_once_with()
+        assert isinstance(actual_location, Point)
+        assert actual_location == Point(17, 19)
+
+
+class TestMouseMoveTo:
+    @staticmethod
+    def test_exception_raised_when_moving_with_speed_and_duration_both_non_none():
+        # Arrange
+        subject = interaction.Mouse()
+
+        # Act & Assert
+        with pytest.raises(ValueError):
+            subject.move_to((0, 0), speed=12, duration=100)
+
+    @staticmethod
+    def test_pyautogui_move_to_called_with_given_duration_when_moving_to_tuple_location():
+        # Arrange
+        subject = interaction.Mouse()
+
+        # Act
+        with mock.patch("pin_the_tail.image.pyautogui.moveTo") as move_to_patch:
+            subject.move_to((0, 0), duration=11)
+
+        # Assert
+        move_to_patch.assert_called_once_with(0, 0, 11)
+
+    @staticmethod
+    def test_pyautogui_move_to_called_with_appropriate_duration_when_given_speed():
+        # Arrange
+        subject = interaction.Mouse()
+
+        # Act
+        with mock.patch("pin_the_tail.image.pyautogui.moveTo") as move_to_patch:
+            with mock.patch(
+                "pin_the_tail.image.pyautogui.position", return_value=pyautogui.Point(0, 45)
+            ) as position_patch:
+                subject.move_to((0, 0), speed=45)
+
+        # Assert
+        move_to_patch.assert_called_once_with(0, 0, 1)
+        position_patch.assert_called_once_with()
+
+    @staticmethod
+    def test_pyautogui_move_to_called_with_appropriate_duration_when_no_duration_or_speed_given():
+        # Arrange
+        subject = interaction.Mouse(default_move_speed=47)
+
+        # Act
+        with mock.patch("pin_the_tail.image.pyautogui.moveTo") as move_to_patch:
+            with mock.patch(
+                "pin_the_tail.image.pyautogui.position", return_value=pyautogui.Point(0, 47 * 2)
+            ) as position_patch:
+                subject.move_to((0, 0))
+
+        # Assert
+        move_to_patch.assert_called_once_with(0, 0, 2)
+        position_patch.assert_called_once_with()
+
+    @staticmethod
+    def test_pyautogui_move_to_called_with_given_duration_when_moving_to_point_location():
+        # Arrange
+        subject = interaction.Mouse()
+
+        # Act
+        with mock.patch("pin_the_tail.image.pyautogui.moveTo") as move_to_patch:
+            subject.move_to(Point(7, 13), duration=17)
+
+        # Assert
+        move_to_patch.assert_called_once_with(7, 13, 17)
+
+    @staticmethod
+    @pytest.mark.parametrize("mock_needle", ["string needle", BaseImage()])
+    def test_screen_searched_for_needle_when_needle_given_for_location(mock_needle):
+        # Arrange
+        mock_screen = mock.MagicMock()
+        region = Region(0, 0, 6, 8)
+        mock_screen.find = mock.MagicMock(return_value=region)
+        subject = interaction.Mouse(screen_reference=mock_screen)
+
+        # Act
+        with mock.patch("pin_the_tail.image.pyautogui.moveTo") as move_to_patch:
+            subject.move_to(mock_needle, duration=17)
+
+        # Assert
+        move_to_patch.assert_called_once_with(region.center.x, region.center.y, 17)
+        mock_screen.find.assert_called_once_with(mock_needle)
+
+    @staticmethod
+    @pytest.mark.parametrize("region", [Region(0, 0, 6, 8), Region(0, 0, 7, 9)])
+    def test_found_region_is_odd_or_even_dimension_size_still_results_in_integer_location(region):
+        # Arrange
+        mock_needle = "string needle"
+        mock_screen = mock.MagicMock()
+        mock_screen.find = mock.MagicMock(return_value=region)
+        subject = interaction.Mouse(screen_reference=mock_screen)
+
+        # Act
+        with mock.patch("pin_the_tail.image.pyautogui.moveTo") as move_to_patch:
+            subject.move_to(mock_needle, duration=17)
+
+        # Assert
+        move_to_patch.assert_called_once_with(region.center.x, region.center.y, 17)
+        mock_screen.find.assert_called_once_with(mock_needle)
+
+    @staticmethod
+    @pytest.mark.parametrize("mock_needle", ["string needle", BaseImage()])
+    def test_needle_not_found_exception_raised_when_location_not_found_in_screen(mock_needle):
+        # Arrange
+        mock_screen = mock.MagicMock()
+        mock_screen.find = mock.MagicMock(return_value=None)
+        subject = interaction.Mouse(screen_reference=mock_screen)
+
+        # Act
+        with pytest.raises(NeedleNotFoundError):
+            subject.move_to(mock_needle)
+
+        # Assert
+        mock_screen.find.assert_called_once_with(mock_needle)
