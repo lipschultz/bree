@@ -122,29 +122,29 @@ class KeysToPress(list):
             iter(other)
         except TypeError:
             return NotImplemented
-        else:
-            retval = KeysToPress(self)
-            retval.extend(other)
-            return retval
+
+        retval = KeysToPress(self)
+        retval.extend(other)
+        return retval
 
     def __radd__(self, other) -> "KeysToPress":
         try:
             iter(other)
         except TypeError:
             return NotImplemented
-        else:
-            retval = KeysToPress(other)
-            retval.extend(self)
-            return retval
+
+        retval = KeysToPress(other)
+        retval.extend(self)
+        return retval
 
     def __iadd__(self, other: Iterable[KeyType]) -> "KeysToPress":
         try:
             iter(other)
         except TypeError:
             return NotImplemented
-        else:
-            self.extend(other)
-            return self
+
+        self.extend(other)
+        return self
 
     def write(self, typing_speed: NumberType = 300 / 60) -> None:
         if not isinstance(typing_speed, (int, float)):
