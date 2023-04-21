@@ -28,7 +28,7 @@ def is_iterable(obj, str_is_iterable=False, bytes_is_iterable=False):
 class MouseButton(enum.Enum):
     RIGHT = "right"
     LEFT = "left"
-    CENTER = "center"
+    MIDDLE = "middle"
 
 
 class SpecialKey(enum.Enum):
