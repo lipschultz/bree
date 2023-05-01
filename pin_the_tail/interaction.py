@@ -30,6 +30,11 @@ class MouseButton(enum.Enum):
     LEFT = "left"
     MIDDLE = "middle"
 
+    @property
+    def pyautogui_button(self) -> str:
+        """Get the pyautogui representation of the mouse button"""
+        return {self.RIGHT: pyautogui.RIGHT, self.LEFT: pyautogui.LEFT, self.MIDDLE: pyautogui.MIDDLE}[self]
+
 
 class SpecialKey(enum.Enum):
     ALT = "alt"

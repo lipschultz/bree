@@ -11,6 +11,20 @@ from pin_the_tail.image import BaseImage, NeedleNotFoundError, Screen
 from pin_the_tail.location import Point, Region
 
 
+class TestMouseButton:
+    @staticmethod
+    @pytest.mark.parametrize(
+        "button, expected_button",
+        [
+            (interaction.MouseButton.LEFT, pyautogui.LEFT),
+            (interaction.MouseButton.MIDDLE, pyautogui.MIDDLE),
+            (interaction.MouseButton.RIGHT, pyautogui.RIGHT),
+        ],
+    )
+    def test_mouse_button_converts_to_correct_pyautogui_button(button, expected_button):
+        assert button.pyautogui_button == expected_button
+
+
 class TestSpecialKey:
     @staticmethod
     @pytest.mark.parametrize(
