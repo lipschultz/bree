@@ -9,11 +9,11 @@ repos:
       - id: check-yaml
       - id: check-added-large-files
   - repo: https://github.com/psf/black
-    rev: 22.12.0
+    rev: 23.3.0
     hooks:
       - id: black
   - repo: https://github.com/PyCQA/autoflake
-    rev: v2.0.0
+    rev: v2.1.1
     hooks:
       - id: autoflake
         exclude: /__pycache__/
@@ -22,7 +22,7 @@ repos:
           - --remove-all-unused-imports
           - --ignore-init-module-imports
   - repo: https://github.com/PyCQA/isort
-    rev: 5.11.4
+    rev: 5.12.0
     hooks:
       - id: isort
         exclude: /__pycache__/
@@ -30,7 +30,7 @@ repos:
           - --profile=black
           - --line-length=120
   - repo: https://github.com/pycqa/pylint
-    rev: v2.16.0b1
+    rev: v3.0.0a6
     hooks:
       - id: pylint
         args: [--fail-under=7]
@@ -49,6 +49,6 @@ repos:
         args: ["-c", "pyproject.toml"]
         additional_dependencies: ["bandit[toml]"]
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: 'v0.0.260'
+    rev: 'v0.0.269'
     hooks:
       - id: ruff
