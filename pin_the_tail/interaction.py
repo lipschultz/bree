@@ -110,7 +110,7 @@ class SpecialKey(enum.Enum):
     LEFT = "left"
     MODE_CHANGE = "modechange"
     MULTIPLY = "multiply"
-    MEXT_TRACK = "nexttrack"
+    NEXT_TRACK = "nexttrack"
     NON_CONVERT = "nonconvert"
     NUM_0 = "num0"
     NUM_1 = "num1"
